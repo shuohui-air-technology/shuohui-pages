@@ -1,0 +1,30 @@
+name: Configure Cloudflare DNS
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/cloudflare-dns.yml'
+
+jobs:
+  dns-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set CNAME record for shuohui.uk
+        run: |
+          ZONE_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=shuohui.uk" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -H "Content-Type: application/json")
+          
+          ZONE_ID=$(echo "$ZONE_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['result'][0]['id'])")
+          echo "Zone ID: $ZONE_ID"
+          
+          curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
+            -H "Authorization: Bearer ${{ secrets.CF_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "type": "CNAME",
+              "name": "@",
+              "content": "shuohui-air-technology.github.io",
+              "proxied": true,
+              "ttl": 1
+            }'
