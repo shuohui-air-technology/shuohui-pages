@@ -1,0 +1,30 @@
+baseURL = "https://shuohui.uk/"
+languageCode = "zh-cn"
+title = "朔卉的数字空间"
+theme = "PaperMod"
+
+[params]
+  defaultTheme = "auto"
+  ShowReadingTime = true
+  ShowCodeCopyButtons = true
+  math = true
+  giscus = true
+
+  [params.homeInfoParams]
+    Title = "朔卉 (shuohui)"
+    Content = "A LLM lover and applied mathematician, my dream is to build an ATRI."
+
+  [params.profileMode]
+    enabled = false
+
+[menu]
+  [[menu.main]]
+    identifier = "math"
+    name = "学术与推导"
+    url = "/math/"
+    weight = 10
+  [[menu.main]]
+    identifier = "acg"
+    name = "二次元与随笔"
+    url = "/acg/"
+    weight = 20
