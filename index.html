@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>shuohui | Digital Space</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --border-color: #30363d;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .profile-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 480px;
+            padding: 32px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .name-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        h1 {
+            font-size: 1.75rem;
+            margin: 0;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .pronouns {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        .bio {
+            font-size: 1rem;
+            color: var(--text-main);
+            line-height: 1.6;
+            margin-top: 16px;
+            text-align: center;
+            font-style: italic;
+        }
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 24px 0;
+        }
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .tag {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+        .links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: opacity 0.2s;
+        }
+        .links a:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-card">
+        <div class="header">
+            <div class="name-container">
+                <h1>朔卉 (shuohui)</h1>
+                <span class="pronouns">he/him</span>
+            </div>
+            <p class="bio">"A LLM lover and applied mathematician, my dream is to build an ATRI."</p>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="section-title">Fields of Interest</div>
+        <div class="tag-container">
+            <div class="tag">Large Language Models</div>
+            <div class="tag">Applied Mathematics</div>
+            <div class="tag">AIGC Tools & Agents</div>
+            <div class="tag">Automation Pipelines</div>
+        </div>
+        
+        <div class="links">
+            <a href="https://github.com/shuohui-air-technology" target="_blank">GitHub</a>
+            <a href="mailto:i@shuohui.uk">Email</a>
+        </div>
+    </div>
+</body>
+</html>
