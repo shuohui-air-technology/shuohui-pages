@@ -7,8 +7,15 @@ async function handleRequest(request) {
 
   // 1. /auth — 重定向到 GitHub 授权页
   if (url.pathname === '/auth') {
-    const redirectUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo,user`;
-    return Response.redirect(redirectUrl, 302);
+    const params = new URLSearchParams({
+      client_id: GITHUB_CLIENT_ID,
+      scope: 'repo,user',
+      redirect_uri: url.origin + '/callback'
+    })
+    return Response.redirect(
+      'https://github.com/login/oauth/authorize?' + params.toString(),
+      302
+    )
   }
 
   // 2. /callback — 交换 code 换取 token，postMessage + close 弹窗
@@ -36,7 +43,6 @@ async function handleRequest(request) {
       return new Response('Failed to exchange token: ' + JSON.stringify(tokenData), { status: 500 })
     }
 
-    // 扁平 JSON，严格匹配 Decap CMS 源码正则
     const html = `
     <!DOCTYPE html>
     <html>
