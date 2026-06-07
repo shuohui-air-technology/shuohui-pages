@@ -43,6 +43,7 @@ async function handleRequest(request) {
       return new Response('Failed to exchange token: ' + JSON.stringify(tokenData), { status: 500 })
     }
 
+    // 使用 JSON.stringify 正确转义 token 中的特殊字符
     const html = `
     <!DOCTYPE html>
     <html>
@@ -51,9 +52,10 @@ async function handleRequest(request) {
       <p>认证成功！正在同步安全凭证，即将进入系统...</p>
       <script>
         (function() {
-          const targetWindow = window.opener || window.parent;
+          var targetWindow = window.opener || window.parent;
           if (targetWindow) {
-            const message = 'authorization:github:success:{"token":"${token}","provider":"github"}';
+            var payload = JSON.stringify({ token: ${JSON.stringify(token)}, provider: "github" });
+            var message = "authorization:github:success:" + payload;
             targetWindow.postMessage(message, "*");
             window.close();
           } else {
