@@ -36,30 +36,22 @@ async function handleRequest(request) {
       return new Response('Failed to exchange token: ' + JSON.stringify(tokenData), { status: 500 })
     }
 
-    // 跨窗口握手 + 自动关闭弹窗
+    // 扁平 JSON，严格匹配 Decap CMS 源码正则
     const html = `
     <!DOCTYPE html>
     <html>
     <head><title>Authenticated</title></head>
     <body>
-      <p>认证成功！正在同步数据，请稍候...</p>
+      <p>认证成功！正在同步安全凭证，即将进入系统...</p>
       <script>
         (function() {
           const targetWindow = window.opener || window.parent;
-          const response = {
-            provider: "github",
-            status: "success",
-            data: {
-              token: "${token}",
-              provider: "github"
-            }
-          };
-          
           if (targetWindow) {
-            targetWindow.postMessage('authorization:github:success:' + JSON.stringify(response), "*");
+            const message = 'authorization:github:success:{"token":"${token}","provider":"github"}';
+            targetWindow.postMessage(message, "*");
             window.close();
           } else {
-            document.body.innerText = "认证成功，但未找到父窗口，请关闭此页并刷新后台。";
+            document.body.innerText = "认证成功，但未能联系到主控制台，请手动刷新。";
           }
         })()
       </script>
