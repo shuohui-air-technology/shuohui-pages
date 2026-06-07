@@ -1,9 +1,18 @@
 ---
-title: "俞浩然的数字花园"
+title: 朔卉's blog
 ---
 
-目前主攻数学与应用数学。这里是我的知识库与随笔空间，主要记录：
+This blog serves as a personal space to document my specific reflections and insights. Content mainly includes:
 
-* **学术推导**：基于微积分与线性代数（LADR）的复杂证明与推导笔记。
-* **代码实战**：数据可视化分析、AstrBot 与本地化 AI 框架的部署调试记录。
-* **游玩随笔**：记录从《ATRI -My Dear Moments-》那招帅气的火箭拳，到《只狼》与《杀戮尖塔》的沉浸体验。
+- **Academic Notes**
+- **Daily Musings**
+- ...and more.
+
+这是一个用于记录我个人感悟与思考的空间。内容主要包括：
+- **学术笔记**
+- **日常随笔**
+- ……及其他。
+
+我的联系方式及 github 个人页链接:
+gmail:a0921652310@gmail.com
+github:https://github.com/shuohui-air-technology
