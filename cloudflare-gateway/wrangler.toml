@@ -1,0 +1,7 @@
+name = "shuohui-cms-oauth"
+main = "index.js"
+compatibility_date = "2026-06-07"
+
+# Set secrets via CLI before deploy:
+#   wrangler secret put GITHUB_CLIENT_ID
+#   wrangler secret put GITHUB_CLIENT_SECRET
