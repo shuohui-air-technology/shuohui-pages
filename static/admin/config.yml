@@ -39,3 +39,13 @@ collections:
             required: false
       - { label: "是否开启评论", name: "comments", widget: "boolean", default: true }
       - { label: "随笔内容", name: "body", widget: "markdown" }
+
+  - name: "pages"
+    label: "独立页面管理 (Pages)"
+    files:
+      - label: "博客主页 (Home)"
+        name: "home"
+        file: "content/_index.md"
+        fields:
+          - {label: "主页大标题", name: "title", widget: "string"}
+          - {label: "主页正文介绍", name: "body", widget: "markdown"}

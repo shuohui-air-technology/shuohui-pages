@@ -17,6 +17,13 @@ theme = "PaperMod"
   [params.profileMode]
     enabled = false
 
+[[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/shuohui-air-technology"
+[[params.socialIcons]]
+    name = "email"
+    url = "mailto:a0921652310@gmail.com"
+
 [menu]
   [[menu.main]]
     identifier = "math"
