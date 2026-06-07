@@ -1,73 +1,56 @@
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request))
-})
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const client_id = env.GITHUB_CLIENT_ID;
+    const client_secret = env.GITHUB_CLIENT_SECRET;
 
-async function handleRequest(request) {
-  const url = new URL(request.url)
-
-  // 1. /auth — 重定向到 GitHub 授权页
-  if (url.pathname === '/auth') {
-    const params = new URLSearchParams({
-      client_id: GITHUB_CLIENT_ID,
-      scope: 'repo,user',
-      redirect_uri: url.origin + '/callback'
-    })
-    return Response.redirect(
-      'https://github.com/login/oauth/authorize?' + params.toString(),
-      302
-    )
-  }
-
-  // 2. /callback — 交换 code 换取 token，postMessage + 延迟 close 弹窗
-  if (url.pathname === '/callback') {
-    const code = url.searchParams.get('code')
-    if (!code) return new Response('Missing code', { status: 400 })
-
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code: code
-      })
-    })
-
-    const tokenData = await tokenResponse.json()
-    const token = tokenData.access_token
-
-    if (!token) {
-      return new Response('Failed to exchange token: ' + JSON.stringify(tokenData), { status: 500 })
+    // 路由 1：发起授权请求
+    if (url.pathname === "/auth") {
+      // 绝杀点 1：必须带上 scope=repo,user，否则后端无法获取写权限
+      const redirectUrl = `https://github.com/login/oauth/authorize?client_id=${client_id}&scope=repo,user`;
+      return Response.redirect(redirectUrl, 302);
     }
 
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head><title>Authenticated</title></head>
-    <body>
-      <p>认证成功！正在同步安全凭证，即将进入系统...</p>
-      <script>
-        (function() {
-          var targetWindow = window.opener || window.parent;
-          if (targetWindow) {
-            var payload = JSON.stringify({ token: ${JSON.stringify(token)}, provider: "github" });
-            var message = "authorization:github:success:" + payload;
-            targetWindow.postMessage(message, "*");
-            setTimeout(function() { window.close(); }, 1000);
-          } else {
-            document.body.innerText = "认证成功，但未能联系到主控制台，请手动刷新。";
-          }
-        })()
-      </script>
-    </body>
-    </html>
-    `;
-    return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
-  }
+    // 路由 2：处理 GitHub 回调并返回 Token
+    if (url.pathname === "/callback") {
+      const code = url.searchParams.get("code");
+      if (!code) return new Response("Missing code", { status: 400 });
 
-  // 3. 兜底
-  return new Response('Decap CMS OAuth Gateway is operational!', { status: 200 })
-}
+      const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "User-Agent": "Shuohui-OAuth-Gateway"
+        },
+        body: JSON.stringify({ client_id, client_secret, code }),
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (tokenData.error) {
+        return new Response(`Error from GitHub: ${tokenData.error}`, { status: 500 });
+      }
+
+      // 绝杀点 2：返回通信页面，并强制延迟 1000 毫秒关闭窗口以应对进程隔离
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><title>授权成功</title></head>
+        <body>
+          <p>身份验证成功！正在返回系统...</p>
+          <script>
+            const message = 'authorization:github:success:{"token":"${tokenData.access_token}","provider":"github"}';
+            window.opener.postMessage(message, "*");
+            // 延迟 1 秒，确保母页面有充足时间验证来源窗口存活状态
+            setTimeout(() => window.close(), 1000);
+          </script>
+        </body>
+        </html>
+      `;
+      return new Response(html, { headers: { "Content-Type": "text/html;charset=UTF-8" } });
+    }
+
+    return new Response("Not Found", { status: 404 });
+  }
+};

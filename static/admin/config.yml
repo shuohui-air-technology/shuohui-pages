@@ -2,9 +2,8 @@ backend:
   name: github
   repo: shuohui-air-technology/shuohui-pages
   branch: main
-  base_url: https://shuohui-cms-oauth.shuohui.workers.dev
+  base_url: https://shuohui-cms-oauth.shuohui.workers.dev/
   auth_endpoint: auth
-  open_authoring: false
 
 media_folder: "static/images"
 public_folder: "/images"
