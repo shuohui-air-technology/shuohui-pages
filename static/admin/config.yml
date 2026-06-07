@@ -29,6 +29,13 @@ collections:
     fields:
       - { label: "文章标题", name: "title", widget: "string" }
       - { label: "发布日期", name: "date", widget: "datetime" }
-      - { label: "封面图片", name: "cover.image", widget: "image", required: false }
+      - name: "cover"
+        label: "封面"
+        widget: "object"
+        fields:
+          - name: "image"
+            label: "封面图片"
+            widget: "image"
+            required: false
       - { label: "是否开启评论", name: "comments", widget: "boolean", default: true }
       - { label: "随笔内容", name: "body", widget: "markdown" }
