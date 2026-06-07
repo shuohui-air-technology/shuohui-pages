@@ -18,7 +18,7 @@ async function handleRequest(request) {
     )
   }
 
-  // 2. /callback — 交换 code 换取 token，postMessage + close 弹窗
+  // 2. /callback — 交换 code 换取 token，postMessage + 延迟 close 弹窗
   if (url.pathname === '/callback') {
     const code = url.searchParams.get('code')
     if (!code) return new Response('Missing code', { status: 400 })
@@ -43,7 +43,6 @@ async function handleRequest(request) {
       return new Response('Failed to exchange token: ' + JSON.stringify(tokenData), { status: 500 })
     }
 
-    // 使用 JSON.stringify 正确转义 token 中的特殊字符
     const html = `
     <!DOCTYPE html>
     <html>
@@ -57,7 +56,7 @@ async function handleRequest(request) {
             var payload = JSON.stringify({ token: ${JSON.stringify(token)}, provider: "github" });
             var message = "authorization:github:success:" + payload;
             targetWindow.postMessage(message, "*");
-            window.close();
+            setTimeout(function() { window.close(); }, 1000);
           } else {
             document.body.innerText = "认证成功，但未能联系到主控制台，请手动刷新。";
           }
