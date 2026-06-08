@@ -1,0 +1,7 @@
+/* 开启公式溢出后的横向滚动 */
+.mathjax-block, .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
+}
