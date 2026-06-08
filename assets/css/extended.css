@@ -5,3 +5,33 @@
     padding: 10px 0;
     -webkit-overflow-scrolling: touch;
 }
+
+/* =========================================
+   交互设计：主页与正文链接动态过渡指示条
+   ========================================= */
+.post-content a,
+.profile-description a {
+    position: relative;
+    text-decoration: none !important;
+    font-weight: 600;
+    color: var(--primary); /* 跟随主题强调色 */
+}
+
+/* 常驻的一小截视觉暗示 */
+.post-content a::after,
+.profile-description a::after {
+    content: '';
+    position: absolute;
+    width: 20%;
+    height: 2px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--primary);
+    transition: width 0.3s ease-out; /* 平滑滑出动画 */
+}
+
+/* 悬停时拉满底边 */
+.post-content a:hover::after,
+.profile-description a:hover::after {
+    width: 100%;
+}

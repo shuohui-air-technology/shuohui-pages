@@ -9,39 +9,6 @@ media_folder: "static/images"
 public_folder: "/images"
 
 collections:
-  - name: "math"
-    label: "学术与推导笔记"
-    folder: "content/math"
-    create: true
-    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
-    fields:
-      - { label: "文章标题", name: "title", widget: "string" }
-      - { label: "发布日期", name: "date", widget: "datetime" }
-      - { label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: true }
-      - { label: "是否开启评论", name: "comments", widget: "boolean", default: true }
-      - { label: "文章内容", name: "body", widget: "markdown" }
-      - { label: "是否为草稿 (Draft)", name: "draft", widget: "boolean", default: false }
-
-  - name: "acg"
-    label: "二次元与游戏随笔"
-    folder: "content/acg"
-    create: true
-    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
-    fields:
-      - { label: "文章标题", name: "title", widget: "string" }
-      - { label: "发布日期", name: "date", widget: "datetime" }
-      - name: "cover"
-        label: "封面"
-        widget: "object"
-        fields:
-          - name: "image"
-            label: "封面图片"
-            widget: "image"
-            required: false
-      - { label: "是否开启评论", name: "comments", widget: "boolean", default: true }
-      - { label: "随笔内容", name: "body", widget: "markdown" }
-      - { label: "是否为草稿 (Draft)", name: "draft", widget: "boolean", default: false }
-
   - name: "pages"
     label: "独立页面管理 (Pages)"
     files:
@@ -51,3 +18,34 @@ collections:
         fields:
           - {label: "主页大标题", name: "title", widget: "string"}
           - {label: "主页正文介绍", name: "body", widget: "markdown"}
+
+  - name: "posts"
+    label: "📝 全部文章内容 (All Posts)"
+    folder: "content/posts"
+    create: true
+    fields:
+      - {label: "文章标题", name: "title", widget: "string"}
+      - {label: "发布日期", name: "date", widget: "datetime"}
+      - {label: "所属板块 (Category)", name: "categories", widget: "list", hint: "输入板块名称，例如：学术推导与笔记。该名称必须与下方设置的菜单名称完全一致！"}
+      - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: false}
+      - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
+      - {label: "正文内容", name: "body", widget: "markdown"}
+
+  - name: "menus"
+    label: "🗂️ 顶栏板块菜单管理 (Navigation)"
+    folder: "content/categories"
+    create: true
+    slug: "{{title}}"
+    path: "{{slug}}/_index"
+    fields:
+      - {label: "板块精准名称", name: "title", widget: "string", hint: "必须与上方文章填写的所属板块(Category)名称一字不差"}
+      - label: "导航栏菜单配置"
+        name: "menu"
+        widget: "object"
+        fields:
+          - label: "主菜单参数"
+            name: "main"
+            widget: "object"
+            fields:
+              - {label: "顶栏显示名称(建议同上)", name: "name", widget: "string"}
+              - {label: "菜单排序(数字越小越靠左)", name: "weight", widget: "number", default: 10}

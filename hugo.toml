@@ -3,6 +3,9 @@ languageCode = "zh-cn"
 title = "朔卉的数字空间"
 theme = "PaperMod"
 
+[taxonomies]
+  category = "categories"
+
 [params]
   defaultTheme = "auto"
   ShowReadingTime = true
@@ -24,15 +27,3 @@ theme = "PaperMod"
 [[params.socialIcons]]
     name = "email"
     url = "mailto:a0921652310@gmail.com"
-
-[menu]
-  [[menu.main]]
-    identifier = "math"
-    name = "学术与推导"
-    url = "/math/"
-    weight = 10
-  [[menu.main]]
-    identifier = "acg"
-    name = "二次元与随笔"
-    url = "/acg/"
-    weight = 20
