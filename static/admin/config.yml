@@ -13,7 +13,7 @@ collections:
   # 模块 1：独立页面管理 (如博客主页)
   # ==========================================
   - name: "pages"
-    label: "📄 独立页面管理 (Pages)"
+    label: "独立页面管理 (Pages)"
     files:
       - label: "博客主页 (Home)"
         name: "home"
@@ -26,7 +26,7 @@ collections:
   # 模块 2：学术推导与笔记 (对应 content/math)
   # ==========================================
   - name: "math"
-    label: "📐 学术推导与笔记"
+    label: "学术推导与笔记"
     folder: "content/math"
     create: true
     fields:
@@ -40,7 +40,7 @@ collections:
   # 模块 3：二次元与随笔 (对应 content/acgn)
   # ==========================================
   - name: "acgn"
-    label: "🌸 二次元与随笔"
+    label: "二次元与随笔"
     folder: "content/acgn"
     create: true
     fields:
