@@ -51,3 +51,10 @@
     padding: 10px 0;
     -webkit-overflow-scrolling: touch;
 }
+
+/* =========================================
+   版面精简：隐藏分类列表页的巨大占位标题
+   ========================================= */
+.list .page-header {
+    display: none !important;
+}
