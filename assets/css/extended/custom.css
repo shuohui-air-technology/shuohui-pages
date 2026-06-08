@@ -1,45 +1,79 @@
 /* =========================================
-   交互设计：强制抹除自带灰色背景并添加动态线条
+   【终极重构】动态悬停线条与原生样式强制清除
    ========================================= */
 
-/* 1. 精准狙击：强行抹除 PaperMod 导航菜单的默认灰色背景 */
-#menu a:hover, #menu a.active {
-    background: transparent !important;
-}
-
-/* 2. 定位并清除自带的文字下划线，为线条留出空间 */
-#menu a,
-.profile-description a,
-.post-content a,
+/* 1. 彻底斩断 PaperMod 原生下划线/边框/背景（解决双线条问题） */
+#menu a, #menu a.active,
+.profile-description a, .post-content a,
 .social-icons a {
-    position: relative !important;
     text-decoration: none !important;
-    padding-bottom: 4px !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    position: relative !important;
 }
 
-/* 3. 绘制常驻的 20% 底部短线 */
-#menu a::after,
-.profile-description a::after,
-.post-content a::after,
-.social-icons a::after {
-    content: '';
-    position: absolute;
-    width: 20%;
-    height: 2px;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
+/* 2. 菜单项特效 (完美居中，彻底替代原生 active) */
+#menu a {
+    padding-bottom: 6px !important;
+}
+#menu a::after {
+    content: "" !important;
+    position: absolute !important;
+    width: 20% !important;
+    height: 2px !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     background-color: var(--primary) !important;
-    transition: width 0.3s ease-out;
-    border-radius: 2px;
+    transition: width 0.3s ease-out !important;
+    border-radius: 2px !important;
+}
+#menu a:hover::after,
+#menu a.active::after {
+    width: 100% !important;
 }
 
-/* 4. 鼠标悬停时，底线瞬间拉满 100% */
-#menu a:hover::after,
-.profile-description a:hover::after,
-.post-content a:hover::after,
+/* 3. 社交图标特效 (修复主页 GitHub/Email 失效问题) */
+.social-icons a {
+    display: inline-flex !important;
+    padding-bottom: 8px !important;
+}
+.social-icons a::after {
+    content: "" !important;
+    position: absolute !important;
+    width: 20% !important;
+    height: 2px !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background-color: var(--primary) !important;
+    transition: width 0.3s ease-out !important;
+    border-radius: 2px !important;
+}
 .social-icons a:hover::after {
-    width: 100%;
+    width: 100% !important;
+}
+
+/* 4. 正文与自我介绍链接特效 */
+.profile-description a, .post-content a {
+    padding-bottom: 2px !important;
+    display: inline-block !important;
+}
+.profile-description a::after, .post-content a::after {
+    content: "" !important;
+    position: absolute !important;
+    width: 20% !important;
+    height: 2px !important;
+    bottom: -2px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background-color: var(--primary) !important;
+    transition: width 0.3s ease-out !important;
+    border-radius: 2px !important;
+}
+.profile-description a:hover::after, .post-content a:hover::after {
+    width: 100% !important;
 }
 
 /* =========================================
