@@ -1,79 +1,43 @@
 /* =========================================
-   【终极重构】动态悬停线条与原生样式强制清除
+   交互设计：淡灰色圆角背景悬停 (极客标签风)
    ========================================= */
 
-/* 1. 彻底斩断 PaperMod 原生下划线/边框/背景（解决双线条问题） */
+/* 1. 彻底斩断原生的下划线和边框 */
 #menu a, #menu a.active,
 .profile-description a, .post-content a,
 .social-icons a {
     text-decoration: none !important;
     border-bottom: none !important;
     box-shadow: none !important;
-    background: transparent !important;
     position: relative !important;
+    transition: background-color 0.2s ease, border-radius 0.2s ease !important;
 }
 
-/* 2. 菜单项特效 (完美居中，彻底替代原生 active) */
+/* 2. 彻底清除之前尝试的残留底线伪元素 */
+#menu a::after, .profile-description a::after,
+.post-content a::after, .social-icons a::after {
+    display: none !important;
+}
+
+/* 3. 增加呼吸感内边距，使背景像一个圆角标签 */
 #menu a {
-    padding-bottom: 6px !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
 }
-#menu a::after {
-    content: "" !important;
-    position: absolute !important;
-    width: 20% !important;
-    height: 2px !important;
-    bottom: 0 !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background-color: var(--primary) !important;
-    transition: width 0.3s ease-out !important;
-    border-radius: 2px !important;
-}
-#menu a:hover::after,
-#menu a.active::after {
-    width: 100% !important;
-}
-
-/* 3. 社交图标特效 (修复主页 GitHub/Email 失效问题) */
-.social-icons a {
-    display: inline-flex !important;
-    padding-bottom: 8px !important;
-}
-.social-icons a::after {
-    content: "" !important;
-    position: absolute !important;
-    width: 20% !important;
-    height: 2px !important;
-    bottom: 0 !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background-color: var(--primary) !important;
-    transition: width 0.3s ease-out !important;
-    border-radius: 2px !important;
-}
-.social-icons a:hover::after {
-    width: 100% !important;
-}
-
-/* 4. 正文与自我介绍链接特效 */
 .profile-description a, .post-content a {
-    padding-bottom: 2px !important;
-    display: inline-block !important;
+    padding: 2px 6px !important;
+    border-radius: 6px !important;
 }
-.profile-description a::after, .post-content a::after {
-    content: "" !important;
-    position: absolute !important;
-    width: 20% !important;
-    height: 2px !important;
-    bottom: -2px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background-color: var(--primary) !important;
-    transition: width 0.3s ease-out !important;
-    border-radius: 2px !important;
+.social-icons a {
+    padding: 8px !important;
+    border-radius: 8px !important;
 }
-.profile-description a:hover::after, .post-content a:hover::after {
-    width: 100% !important;
+
+/* 4. 悬停与当前页面状态：激活淡灰背景 */
+#menu a:hover, #menu a.active,
+.profile-description a:hover, .post-content a:hover,
+.social-icons a:hover {
+    background-color: var(--tertiary) !important;
 }
 
 /* =========================================
