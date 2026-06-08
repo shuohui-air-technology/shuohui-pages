@@ -1,25 +1,24 @@
 /* =========================================
    交互设计：强制抹除自带灰色背景并添加动态线条
-   目标范围：顶部导航菜单、主页正文链接、社交图标(GitHub/Email)
    ========================================= */
 
-/* 1. 强行抹除 PaperMod 导航菜单的默认灰色背景 */
-.nav .menu a:hover {
+/* 1. 精准狙击：强行抹除 PaperMod 导航菜单的默认灰色背景 */
+#menu a:hover, #menu a.active {
     background: transparent !important;
 }
 
-/* 2. 定位并清除自带的文字下划线 */
-.nav .menu a,
+/* 2. 定位并清除自带的文字下划线，为线条留出空间 */
+#menu a,
 .profile-description a,
 .post-content a,
 .social-icons a {
     position: relative !important;
     text-decoration: none !important;
-    padding-bottom: 2px; /* 给底线留出呼吸空间 */
+    padding-bottom: 4px !important;
 }
 
 /* 3. 绘制常驻的 20% 底部短线 */
-.nav .menu a::after,
+#menu a::after,
 .profile-description a::after,
 .post-content a::after,
 .social-icons a::after {
@@ -27,16 +26,16 @@
     position: absolute;
     width: 20%;
     height: 2px;
-    bottom: -2px;
+    bottom: 0;
     left: 50%;
-    transform: translateX(-50%); /* 居中对齐 */
-    background-color: var(--primary); /* 跟随主题高亮色 */
-    transition: width 0.3s ease-out; /* 极其平滑的滑出动画 */
+    transform: translateX(-50%);
+    background-color: var(--primary) !important;
+    transition: width 0.3s ease-out;
     border-radius: 2px;
 }
 
 /* 4. 鼠标悬停时，底线瞬间拉满 100% */
-.nav .menu a:hover::after,
+#menu a:hover::after,
 .profile-description a:hover::after,
 .post-content a:hover::after,
 .social-icons a:hover::after {

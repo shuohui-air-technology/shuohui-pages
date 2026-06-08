@@ -28,6 +28,15 @@ collections:
       - {label: "发布日期", name: "date", widget: "datetime"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: true}
       - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
+      - label: "文章封面 (Cover)"
+        name: "cover"
+        widget: "object"
+        required: false
+        collapsed: true
+        fields:
+          - {label: "上传图片", name: "image", widget: "image", required: false}
+          - {label: "图片替代文字(Alt)", name: "alt", widget: "string", required: false}
+          - {label: "使用相对路径", name: "relative", widget: "boolean", default: true, required: false}
       - {label: "正文内容", name: "body", widget: "markdown"}
 
   - name: "acgn"
@@ -39,4 +48,13 @@ collections:
       - {label: "发布日期", name: "date", widget: "datetime"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: false}
       - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
+      - label: "文章封面 (Cover)"
+        name: "cover"
+        widget: "object"
+        required: false
+        collapsed: true
+        fields:
+          - {label: "上传图片", name: "image", widget: "image", required: false}
+          - {label: "图片替代文字(Alt)", name: "alt", widget: "string", required: false}
+          - {label: "使用相对路径", name: "relative", widget: "boolean", default: true, required: false}
       - {label: "正文内容", name: "body", widget: "markdown"}
