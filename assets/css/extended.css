@@ -1,37 +1,54 @@
-/* 开启公式溢出后的横向滚动 */
-.mathjax-block, .katex-display {
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 10px 0;
-    -webkit-overflow-scrolling: touch;
-}
-
 /* =========================================
-   交互设计：主页与正文链接动态过渡指示条
+   交互设计：强制抹除自带灰色背景并添加动态线条
+   目标范围：顶部导航菜单、主页正文链接、社交图标(GitHub/Email)
    ========================================= */
-.post-content a,
-.profile-description a {
-    position: relative;
-    text-decoration: none !important;
-    font-weight: 600;
-    color: var(--primary); /* 跟随主题强调色 */
+
+/* 1. 强行抹除 PaperMod 导航菜单的默认灰色背景 */
+.nav .menu a:hover {
+    background: transparent !important;
 }
 
-/* 常驻的一小截视觉暗示 */
+/* 2. 定位并清除自带的文字下划线 */
+.nav .menu a,
+.profile-description a,
+.post-content a,
+.social-icons a {
+    position: relative !important;
+    text-decoration: none !important;
+    padding-bottom: 2px; /* 给底线留出呼吸空间 */
+}
+
+/* 3. 绘制常驻的 20% 底部短线 */
+.nav .menu a::after,
+.profile-description a::after,
 .post-content a::after,
-.profile-description a::after {
+.social-icons a::after {
     content: '';
     position: absolute;
     width: 20%;
     height: 2px;
     bottom: -2px;
-    left: 0;
-    background-color: var(--primary);
-    transition: width 0.3s ease-out; /* 平滑滑出动画 */
+    left: 50%;
+    transform: translateX(-50%); /* 居中对齐 */
+    background-color: var(--primary); /* 跟随主题高亮色 */
+    transition: width 0.3s ease-out; /* 极其平滑的滑出动画 */
+    border-radius: 2px;
 }
 
-/* 悬停时拉满底边 */
+/* 4. 鼠标悬停时，底线瞬间拉满 100% */
+.nav .menu a:hover::after,
+.profile-description a:hover::after,
 .post-content a:hover::after,
-.profile-description a:hover::after {
+.social-icons a:hover::after {
     width: 100%;
+}
+
+/* =========================================
+   公式溢出横向滚动支持
+   ========================================= */
+.mathjax-block, .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
 }
