@@ -4,8 +4,48 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shuohui CMS</title>
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true,
+          processEnvironments: true
+        },
+        options: {
+          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+        }
+      };
+    </script>
+    <script id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   </head>
   <body>
     <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
+    <script>
+      (function () {
+        var observer = new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            var target = mutations[i].target.closest
+              ? mutations[i].target.closest('[role="document"]')
+              : null;
+            if (!target && mutations[i].target.parentElement) {
+              target = mutations[i].target.parentElement.closest
+                ? mutations[i].target.parentElement.closest('[role="document"]')
+                : null;
+            }
+            if (target && typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+              MathJax.typesetPromise([target]).catch(function () {});
+              break;
+            }
+          }
+        });
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+      })();
+    </script>
   </body>
 </html>
