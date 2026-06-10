@@ -28,6 +28,7 @@ collections:
       - {label: "发布日期", name: "date", widget: "datetime"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: true}
       - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
+      - {label: "是否开启评论", name: "comments", widget: "boolean", default: true}
       - label: "文章封面 (Cover)"
         name: "cover"
         widget: "object"
@@ -48,6 +49,7 @@ collections:
       - {label: "发布日期", name: "date", widget: "datetime"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: false}
       - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
+      - {label: "是否开启评论", name: "comments", widget: "boolean", default: true}
       - label: "文章封面 (Cover)"
         name: "cover"
         widget: "object"
