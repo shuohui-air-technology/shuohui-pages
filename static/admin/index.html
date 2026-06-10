@@ -24,27 +24,61 @@
     <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
     <script>
       (function () {
+        var typing = false;
+        var timer = null;
+        var PREVIEW_DEBOUNCE = 300;
+
         var observer = new MutationObserver(function (mutations) {
+          if (typing) return;
+          var found = false;
           for (var i = 0; i < mutations.length; i++) {
-            var target = mutations[i].target.closest
-              ? mutations[i].target.closest('[role="document"]')
-              : null;
-            if (!target && mutations[i].target.parentElement) {
-              target = mutations[i].target.parentElement.closest
-                ? mutations[i].target.parentElement.closest('[role="document"]')
-                : null;
+            var t = mutations[i].target;
+            var el = t.closest ? t.closest('[role="document"]') : null;
+            if (!el && t.parentElement && t.parentElement.closest) {
+              el = t.parentElement.closest('[role="document"]');
             }
-            if (target && typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
-              MathJax.typesetPromise([target]).catch(function () {});
-              break;
-            }
+            if (el) { found = true; break; }
           }
+          if (!found) return;
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            if (typeof MathJax === 'undefined' || !MathJax.typesetPromise) return;
+            var preview = document.querySelector('[role="document"]');
+            if (!preview) return;
+            typing = true;
+            MathJax.typesetPromise([preview]).then(function () {
+              typing = false;
+            }).catch(function () {
+              typing = false;
+            });
+          }, PREVIEW_DEBOUNCE);
         });
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
+
+        function start() {
+          var preview = document.querySelector('[role="document"]');
+          if (preview) {
+            observer.observe(preview, { childList: true, subtree: true, characterData: true });
+          } else {
+            observer.observe(document.body, { childList: true, subtree: true });
+          }
+        }
+
+        function waitForPreview() {
+          var preview = document.querySelector('[role="document"]');
+          if (preview) {
+            observer.disconnect();
+            observer.observe(preview, { childList: true, subtree: true, characterData: true });
+            return;
+          }
+          setTimeout(waitForPreview, 2000);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function () { start(); waitForPreview(); });
+        } else {
+          start();
+          waitForPreview();
+        }
       })();
     </script>
   </body>
