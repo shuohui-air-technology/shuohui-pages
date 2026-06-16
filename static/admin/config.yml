@@ -25,7 +25,7 @@ collections:
     create: true
     fields:
       - {label: "文章标题", name: "title", widget: "string"}
-      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss"}
+      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: true}
       - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
       - {label: "是否开启评论", name: "comments", widget: "boolean", default: true}
@@ -46,7 +46,7 @@ collections:
     create: true
     fields:
       - {label: "文章标题", name: "title", widget: "string"}
-      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss"}
+      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: false}
       - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}
       - {label: "是否开启评论", name: "comments", widget: "boolean", default: true}

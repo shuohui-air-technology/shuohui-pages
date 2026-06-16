@@ -33,6 +33,21 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
+      - name: Normalize date fields
+        run: |
+          for f in content/**/*.md; do
+            [ -f "$f" ] || continue
+            python3 -c "
+          import re, sys
+          with open('$f', 'r') as fh:
+              c = fh.read()
+          # Match dates like 2026-06-16T08:20 (no seconds) and append :00
+          c = re.sub(r'^(date:\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\s*$', r'\1:00', c, count=1, flags=re.MULTILINE)
+          with open('$f', 'w') as fh:
+              fh.write(c)
+          "
+          done
+
       - name: Build
         run: hugo --minify --gc --buildFuture
 
