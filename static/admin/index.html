@@ -24,107 +24,86 @@
     <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
     <script>
       (function () {
+        var PREVIEW_SEL = '[role="document"]';
+        var POLL_MS = 1000;
+        var lastContent = '';
         var typing = false;
-        var debounceTimer = null;
-        var pollTimer = null;
-        var DEBOUNCE_MS = 300;
         var mathjaxInjected = false;
 
-        function typesetInline() {
+        function getPreview() {
+          return document.querySelector(PREVIEW_SEL);
+        }
+
+        function isIframe(el) {
+          return el && el.tagName === 'IFRAME';
+        }
+
+        function typesetMain() {
           if (typeof MathJax === 'undefined' || !MathJax.typesetPromise) return;
-          var el = document.querySelector('[role="document"]');
-          if (!el) return;
-          if (typing) return;
+          var el = getPreview();
+          if (!el || isIframe(el) || typing) return;
           typing = true;
           MathJax.typesetPromise([el]).then(function () {
             typing = false;
-          }).catch(function () {
-            typing = false;
-          });
+          }).catch(function () { typing = false; });
         }
 
-        function typesetIframe() {
-          var el = document.querySelector('[role="document"]');
-          if (!el || el.tagName !== 'IFRAME') return;
+        function injectMathJaxIntoIframe(iframe) {
+          if (mathjaxInjected) return;
           try {
-            var doc = el.contentDocument;
-            if (!doc) return;
-            var win = el.contentWindow;
+            var doc = iframe.contentDocument;
+            if (!doc || !doc.head) return;
+            var cfg = doc.createElement('script');
+            cfg.textContent = 'MathJax={tex:{inlineMath:[["$","$"],["\\\\(","\\\\)"]],displayMath:[["$$","$$"],["\\\\[","\\\\]"]],processEscapes:true,processEnvironments:true},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}};';
+            doc.head.appendChild(cfg);
+            var s = doc.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+            s.async = true;
+            doc.head.appendChild(s);
+            mathjaxInjected = true;
+          } catch (e) {}
+        }
+
+        function typesetIframe(iframe) {
+          try {
+            var win = iframe.contentWindow;
             if (win && win.MathJax && win.MathJax.typesetPromise) {
               if (typing) return;
               typing = true;
               win.MathJax.typesetPromise().then(function () {
                 typing = false;
-              }).catch(function () {
-                typing = false;
-              });
-              return;
-            }
-            if (!mathjaxInjected) {
-              var cfg = doc.createElement('script');
-              cfg.textContent = 'MathJax={tex:{inlineMath:[["$","$"],["\\\\(","\\\\)"]],displayMath:[["$$","$$"],["\\\\[","\\\\]"]],processEscapes:true,processEnvironments:true},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}};';
-              doc.head.appendChild(cfg);
-              var s = doc.createElement('script');
-              s.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-              s.async = true;
-              doc.head.appendChild(s);
-              mathjaxInjected = true;
+              }).catch(function () { typing = false; });
+              return true;
             }
           } catch (e) {}
+          return false;
         }
 
-        function scheduleTypeset() {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(function () {
-            var el = document.querySelector('[role="document"]');
-            if (!el) return;
-            if (el.tagName === 'IFRAME') {
-              typesetIframe();
-            } else {
-              typesetInline();
-            }
-          }, DEBOUNCE_MS);
-        }
-
-        function observe(target) {
-          new MutationObserver(function () {
-            scheduleTypeset();
-          }).observe(target, { childList: true, subtree: true, characterData: true });
-        }
-
-        function trySetup() {
-          var el = document.querySelector('[role="document"]');
+        function poll() {
+          var el = getPreview();
           if (!el) {
-            pollTimer = setTimeout(trySetup, 1000);
+            setTimeout(poll, POLL_MS);
             return;
           }
-          if (el.tagName === 'IFRAME') {
-            el.addEventListener('load', function () {
-              mathjaxInjected = false;
-              try {
-                var doc = el.contentDocument;
-                if (doc && doc.body) {
-                  observe(doc.body);
-                }
-              } catch (e) {}
-            });
-            try {
-              var doc = el.contentDocument;
-              if (doc && doc.body) {
-                observe(doc.body);
-              }
-            } catch (e) {}
-            pollTimer = setTimeout(trySetup, 2000);
+
+          if (isIframe(el)) {
+            injectMathJaxIntoIframe(el);
+            typesetIframe(el);
           } else {
-            observe(el);
-            pollTimer = setTimeout(trySetup, 2000);
+            var content = el.innerHTML;
+            if (content !== lastContent) {
+              lastContent = content;
+              typesetMain();
+            }
           }
+
+          setTimeout(poll, POLL_MS);
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', trySetup);
+          document.addEventListener('DOMContentLoaded', poll);
         } else {
-          trySetup();
+          poll();
         }
       })();
     </script>
