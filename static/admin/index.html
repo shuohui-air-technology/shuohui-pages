@@ -25,59 +25,106 @@
     <script>
       (function () {
         var typing = false;
-        var timer = null;
-        var PREVIEW_DEBOUNCE = 300;
+        var debounceTimer = null;
+        var pollTimer = null;
+        var DEBOUNCE_MS = 300;
+        var mathjaxInjected = false;
 
-        var observer = new MutationObserver(function (mutations) {
+        function typesetInline() {
+          if (typeof MathJax === 'undefined' || !MathJax.typesetPromise) return;
+          var el = document.querySelector('[role="document"]');
+          if (!el) return;
           if (typing) return;
-          var found = false;
-          for (var i = 0; i < mutations.length; i++) {
-            var t = mutations[i].target;
-            var el = t.closest ? t.closest('[role="document"]') : null;
-            if (!el && t.parentElement && t.parentElement.closest) {
-              el = t.parentElement.closest('[role="document"]');
-            }
-            if (el) { found = true; break; }
-          }
-          if (!found) return;
-          clearTimeout(timer);
-          timer = setTimeout(function () {
-            if (typeof MathJax === 'undefined' || !MathJax.typesetPromise) return;
-            var preview = document.querySelector('[role="document"]');
-            if (!preview) return;
-            typing = true;
-            MathJax.typesetPromise([preview]).then(function () {
-              typing = false;
-            }).catch(function () {
-              typing = false;
-            });
-          }, PREVIEW_DEBOUNCE);
-        });
-
-        function start() {
-          var preview = document.querySelector('[role="document"]');
-          if (preview) {
-            observer.observe(preview, { childList: true, subtree: true, characterData: true });
-          } else {
-            observer.observe(document.body, { childList: true, subtree: true });
-          }
+          typing = true;
+          MathJax.typesetPromise([el]).then(function () {
+            typing = false;
+          }).catch(function () {
+            typing = false;
+          });
         }
 
-        function waitForPreview() {
-          var preview = document.querySelector('[role="document"]');
-          if (preview) {
-            observer.disconnect();
-            observer.observe(preview, { childList: true, subtree: true, characterData: true });
+        function typesetIframe() {
+          var el = document.querySelector('[role="document"]');
+          if (!el || el.tagName !== 'IFRAME') return;
+          try {
+            var doc = el.contentDocument;
+            if (!doc) return;
+            var win = el.contentWindow;
+            if (win && win.MathJax && win.MathJax.typesetPromise) {
+              if (typing) return;
+              typing = true;
+              win.MathJax.typesetPromise().then(function () {
+                typing = false;
+              }).catch(function () {
+                typing = false;
+              });
+              return;
+            }
+            if (!mathjaxInjected) {
+              var cfg = doc.createElement('script');
+              cfg.textContent = 'MathJax={tex:{inlineMath:[["$","$"],["\\\\(","\\\\)"]],displayMath:[["$$","$$"],["\\\\[","\\\\]"]],processEscapes:true,processEnvironments:true},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]}};';
+              doc.head.appendChild(cfg);
+              var s = doc.createElement('script');
+              s.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+              s.async = true;
+              doc.head.appendChild(s);
+              mathjaxInjected = true;
+            }
+          } catch (e) {}
+        }
+
+        function scheduleTypeset() {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(function () {
+            var el = document.querySelector('[role="document"]');
+            if (!el) return;
+            if (el.tagName === 'IFRAME') {
+              typesetIframe();
+            } else {
+              typesetInline();
+            }
+          }, DEBOUNCE_MS);
+        }
+
+        function observe(target) {
+          new MutationObserver(function () {
+            scheduleTypeset();
+          }).observe(target, { childList: true, subtree: true, characterData: true });
+        }
+
+        function trySetup() {
+          var el = document.querySelector('[role="document"]');
+          if (!el) {
+            pollTimer = setTimeout(trySetup, 1000);
             return;
           }
-          setTimeout(waitForPreview, 2000);
+          if (el.tagName === 'IFRAME') {
+            el.addEventListener('load', function () {
+              mathjaxInjected = false;
+              try {
+                var doc = el.contentDocument;
+                if (doc && doc.body) {
+                  observe(doc.body);
+                }
+              } catch (e) {}
+            });
+            try {
+              var doc = el.contentDocument;
+              if (doc && doc.body) {
+                observe(doc.body);
+              }
+            } catch (e) {}
+            pollTimer = setTimeout(trySetup, 2000);
+          } else {
+            observe(el);
+            pollTimer = setTimeout(trySetup, 2000);
+          }
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function () { start(); waitForPreview(); });
+          document.addEventListener('DOMContentLoaded', trySetup);
         } else {
-          start();
-          waitForPreview();
+          trySetup();
         }
       })();
     </script>
