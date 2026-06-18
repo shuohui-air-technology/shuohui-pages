@@ -1,3 +1,6 @@
+editor:
+  preview: true
+
 backend:
   name: github
   repo: shuohui-air-technology/shuohui-pages
