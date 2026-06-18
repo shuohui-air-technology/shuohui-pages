@@ -25,10 +25,13 @@
     <script>
       (function () {
         var PREVIEW_SEL = '[role="document"]';
-        var POLL_MS = 1000;
+        var POLL_IDLE_MS = 2000;
+        var POLL_ACTIVE_MS = 500;
         var lastContent = '';
         var typing = false;
         var mathjaxInjected = false;
+        var lastIframeContent = '';
+        var activeTimer = null;
 
         function getPreview() {
           return document.querySelector(PREVIEW_SEL);
@@ -79,25 +82,44 @@
           return false;
         }
 
+        function scheduleNext(ms) {
+          setTimeout(poll, ms);
+        }
+
         function poll() {
           var el = getPreview();
           if (!el) {
-            setTimeout(poll, POLL_MS);
+            scheduleNext(POLL_IDLE_MS);
             return;
           }
 
+          var changed = false;
+
           if (isIframe(el)) {
             injectMathJaxIntoIframe(el);
-            typesetIframe(el);
+            try {
+              var iframeBody = el.contentDocument && el.contentDocument.body;
+              var iframeContent = iframeBody ? iframeBody.innerHTML : '';
+              if (iframeContent !== lastIframeContent) {
+                lastIframeContent = iframeContent;
+                changed = true;
+              }
+            } catch (e) {}
+            if (changed) typesetIframe(el);
           } else {
             var content = el.innerHTML;
             if (content !== lastContent) {
               lastContent = content;
+              changed = true;
               typesetMain();
             }
           }
 
-          setTimeout(poll, POLL_MS);
+          if (changed) {
+            scheduleNext(POLL_ACTIVE_MS);
+          } else {
+            scheduleNext(POLL_IDLE_MS);
+          }
         }
 
         if (document.readyState === 'loading') {
