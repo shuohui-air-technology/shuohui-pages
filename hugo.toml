@@ -37,3 +37,13 @@ theme = "PaperMod"
     name = "二次元与随笔"
     url = "/acgn/"
     weight = 20
+
+[markup.goldmark.extensions]
+  passthrough = true
+  [markup.goldmark.extensions.passthrough]
+    delimiters = [
+      ["$$", "$$"],
+      ["$", "$"],
+      ["\\(", "\\)"],
+      ["\\[", "\\]"]
+    ]
