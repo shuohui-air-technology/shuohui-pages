@@ -39,11 +39,8 @@ theme = "PaperMod"
     weight = 20
 
 [markup.goldmark.extensions]
-  passthrough = true
   [markup.goldmark.extensions.passthrough]
-    delimiters = [
-      ["$$", "$$"],
-      ["$", "$"],
-      ["\\(", "\\)"],
-      ["\\[", "\\]"]
-    ]
+    enable = true
+    [markup.goldmark.extensions.passthrough.delimiters]
+      block = [["$$", "$$"], ["\\[", "\\]"]]
+      inline = [["$", "$"], ["\\(", "\\)"]]
