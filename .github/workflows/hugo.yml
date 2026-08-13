@@ -24,30 +24,31 @@ jobs:
 
       - name: Clone PaperMod theme
         run: |
-          git clone --depth=1 https://github.com/adityatelange/hugo-PaperMod.git themes/PaperMod
+          git clone https://github.com/adityatelange/hugo-PaperMod.git themes/PaperMod
+          git -C themes/PaperMod checkout d3768854d00ad003b0a8dbdba254ce9224377a01
           rm -rf themes/PaperMod/.git
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 'latest'
+          hugo-version: '0.163.2'
           extended: true
 
-      - name: Normalize date fields
+      - name: Normalize and validate content
         run: |
-          find content -name '*.md' -type f | while read f; do
-            python3 -c "
-          import re
-          with open('$f', 'r') as fh:
-              c = fh.read()
-          c = re.sub(r'^(date:\s*\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\s*$', r'\1:00', c, count=1, flags=re.MULTILINE)
-          with open('$f', 'w') as fh:
-              fh.write(c)
-          "
-          done
+          python3 scripts/content_tools.py normalize content
+          python3 scripts/content_tools.py validate content
 
       - name: Build
         run: hugo --minify --gc --buildFuture
+
+      - name: Check generated outputs
+        run: |
+          python3 scripts/check_build.py --public public \
+            --required acgn/index.html \
+            --required math/index.html \
+            --required sitemap.xml \
+            --required 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
