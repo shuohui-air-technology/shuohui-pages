@@ -39,18 +39,35 @@
           }).catch(function () { typing = false; });
         }
 
+        function appendIframeMathJaxCdn(head) {
+          var script = head.ownerDocument.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+          script.async = true;
+          head.appendChild(script);
+        }
+
+        function appendIframeMathJaxScripts(head) {
+          var cdnAppended = false;
+
+          function appendCdnOnce() {
+            if (cdnAppended) return;
+            cdnAppended = true;
+            appendIframeMathJaxCdn(head);
+          }
+
+          var configScript = head.ownerDocument.createElement('script');
+          configScript.src = '/js/mathjax-config.js';
+          configScript.onload = appendCdnOnce;
+          configScript.onerror = appendCdnOnce;
+          head.appendChild(configScript);
+        }
+
         function injectMathJaxIntoIframe(iframe) {
           if (mathjaxInjected) return;
           try {
             var doc = iframe.contentDocument;
             if (!doc || !doc.head) return;
-            var cfg = doc.createElement('script');
-            cfg.src = '/js/mathjax-config.js';
-            doc.head.appendChild(cfg);
-            var s = doc.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-            s.async = true;
-            doc.head.appendChild(s);
+            appendIframeMathJaxScripts(doc.head);
             mathjaxInjected = true;
           } catch (e) {}
         }
