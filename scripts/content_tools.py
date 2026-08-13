@@ -105,10 +105,9 @@ def validate_front_matter(path: Path) -> list[str]:
     if "title" not in parsed or not isinstance(parsed["title"], str) or not parsed["title"]:
         errors.append(f"{path}: title: missing")
 
-    date_value = parsed.get("date")
-    if date_value is None:
+    if "date" not in parsed:
         errors.append(f"{path}: date: missing")
-    elif not _validate_date(date_value):
+    elif not _validate_date(parsed["date"]):
         errors.append(f"{path}: date: invalid")
 
     for field in ("draft", "math", "comments"):
@@ -122,15 +121,9 @@ def iter_markdown_files(content_dir: Path):
     yield from sorted(path for path in content_dir.rglob("*.md") if path.is_file())
 
 
-def _is_section_index(path: Path) -> bool:
-    return path.name == "_index.md"
-
-
 def normalize_files(content_dir: Path) -> int:
     changed = 0
     for path in iter_markdown_files(content_dir):
-        if _is_section_index(path):
-            continue
         original = path.read_text(encoding="utf-8")
         updated = normalize_date_text(original)
         if updated != original:
@@ -142,8 +135,6 @@ def normalize_files(content_dir: Path) -> int:
 def validate_files(content_dir: Path) -> list[str]:
     errors: list[str] = []
     for path in iter_markdown_files(content_dir):
-        if _is_section_index(path):
-            continue
         errors.extend(validate_front_matter(path))
     return errors
 

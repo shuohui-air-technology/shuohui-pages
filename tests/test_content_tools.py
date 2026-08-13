@@ -3,9 +3,12 @@ import unittest
 from pathlib import Path
 
 from scripts.content_tools import (
+    iter_markdown_files,
+    normalize_files,
     normalize_date_text,
     parse_front_matter,
     validate_front_matter,
+    validate_files,
 )
 
 
@@ -48,6 +51,45 @@ class ContentToolsTests(unittest.TestCase):
             errors = validate_front_matter(path)
             self.assertTrue(any("date" in error for error in errors))
             self.assertTrue(any("draft" in error for error in errors))
+
+    def test_validate_front_matter_reports_null_date_as_invalid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "null-date.md"
+            path.write_text(
+                "---\ntitle: Null Date\ndate: null\n---\ntext\n",
+                encoding="utf-8",
+            )
+            errors = validate_front_matter(path)
+            self.assertTrue(any("date: invalid" in error for error in errors))
+            self.assertFalse(any("date: missing" in error for error in errors))
+
+    def test_iter_markdown_files_includes_section_index_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            content_dir = Path(directory)
+            (content_dir / "section").mkdir()
+            (content_dir / "section" / "_index.md").write_text(
+                "---\ntitle: Section\ndate: 2026-06-09T10:24\n---\n",
+                encoding="utf-8",
+            )
+            (content_dir / "section" / "post.md").write_text(
+                "---\ntitle: Post\ndate: 2026-06-09T10:24:00\n---\n",
+                encoding="utf-8",
+            )
+            files = [path.name for path in iter_markdown_files(content_dir)]
+            self.assertEqual(files, ["_index.md", "post.md"])
+
+    def test_normalize_and_validate_include_section_index_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            content_dir = Path(directory)
+            (content_dir / "section").mkdir()
+            index_path = content_dir / "section" / "_index.md"
+            index_path.write_text(
+                "---\ntitle: Section\ndate: 2026-06-09T10:24\n---\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(normalize_files(content_dir), 1)
+            self.assertIn("10:24:00", index_path.read_text(encoding="utf-8"))
+            self.assertEqual(validate_files(content_dir), [])
 
 
 if __name__ == "__main__":
