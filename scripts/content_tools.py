@@ -101,12 +101,14 @@ def validate_front_matter(path: Path) -> list[str]:
 
     parsed = parse_front_matter(text)
     errors: list[str] = []
+    is_section_index = path.name == "_index.md"
 
     if "title" not in parsed or not isinstance(parsed["title"], str) or not parsed["title"]:
         errors.append(f"{path}: title: missing")
 
     if "date" not in parsed:
-        errors.append(f"{path}: date: missing")
+        if not is_section_index:
+            errors.append(f"{path}: date: missing")
     elif not _validate_date(parsed["date"]):
         errors.append(f"{path}: date: invalid")
 

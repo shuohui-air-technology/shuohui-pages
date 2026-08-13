@@ -63,6 +63,15 @@ class ContentToolsTests(unittest.TestCase):
             self.assertTrue(any("date: invalid" in error for error in errors))
             self.assertFalse(any("date: missing" in error for error in errors))
 
+    def test_validate_front_matter_allows_section_index_without_date(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "_index.md"
+            path.write_text(
+                "---\ntitle: Section Index\n---\ntext\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validate_front_matter(path), [])
+
     def test_iter_markdown_files_includes_section_index_files(self):
         with tempfile.TemporaryDirectory() as directory:
             content_dir = Path(directory)
