@@ -43,5 +43,6 @@ After the smoke check, confirm that:
 
 - `draft: true` is intentional and keeps content out of the public build.
 - Publishing requires `draft: false`; the current validation tools do not silently override author intent.
+- The local validation and build commands in this README do not push, deploy the Worker, or publish GitHub Pages; any of those actions require explicit user confirmation.
 - GitHub Pages deployment is expected to run the normalize, validate, Hugo build, and generated-output smoke checks before uploading `public/`.
 - The Cloudflare Worker should be validated with `node --test cloudflare-gateway/index.test.js` before any separate Worker deployment.
