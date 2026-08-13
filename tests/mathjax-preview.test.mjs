@@ -118,6 +118,137 @@ test('browser controller recovers when MathJax loads after startup', async () =>
   assert.deepEqual(typesetCalls, [[previewNode]]);
 });
 
+test('controller retries existing inline content when MathJax becomes available without content changes', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
+  const document = {
+    querySelector(selector) {
+      assert.equal(selector, '[role="document"]');
+      return previewNode;
+    }
+  };
+  const scheduleSpy = createScheduleSpy();
+  const typesetCalls = [];
+  let mathJax;
+  const controller = preview.createPreviewController({
+    document,
+    getMathJax() {
+      return mathJax;
+    },
+    schedule: {
+      set: scheduleSpy.schedule,
+      clear: scheduleSpy.clear
+    },
+    logger: { warn() {} }
+  });
+
+  await controller.poll();
+
+  assert.equal(typesetCalls.length, 0);
+  assert.equal(scheduleSpy.calls.at(-1).delay, 500);
+
+  mathJax = {
+    typesetPromise(nodes) {
+      typesetCalls.push(nodes);
+      return Promise.resolve();
+    }
+  };
+
+  await controller.poll();
+
+  assert.deepEqual(typesetCalls, [[previewNode]]);
+});
+
+test('controller retries unchanged inline content after a transient typeset rejection', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
+  const document = { querySelector() { return previewNode; } };
+  const warnings = [];
+  let attempt = 0;
+  const controller = preview.createPreviewController({
+    document,
+    mathJax: {
+      typesetPromise(nodes) {
+        attempt += 1;
+        if (attempt === 1) {
+          return Promise.reject(new Error('temporary typeset failure'));
+        }
+        assert.deepEqual(nodes, [previewNode]);
+        return Promise.resolve();
+      }
+    },
+    schedule: {
+      set(fn, delay) { return { fn, delay }; },
+      clear() {}
+    },
+    logger: {
+      warn(...args) {
+        warnings.push(args);
+      }
+    }
+  });
+
+  await controller.poll();
+  await controller.poll();
+
+  assert.equal(attempt, 2);
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0][0], '[Shuohui CMS MathJax]');
+});
+
+test('controller coalesces rapid edits into one follow-up render while a render is pending', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
+  const document = { querySelector() { return previewNode; } };
+  const scheduleSpy = createScheduleSpy();
+  let releaseFirstRender;
+  let activeRenders = 0;
+  let maxConcurrentRenders = 0;
+  const renderedSnapshots = [];
+  const controller = preview.createPreviewController({
+    document,
+    mathJax: {
+      typesetPromise(nodes) {
+        activeRenders += 1;
+        maxConcurrentRenders = Math.max(maxConcurrentRenders, activeRenders);
+        renderedSnapshots.push(nodes[0].innerHTML);
+        if (renderedSnapshots.length === 1) {
+          return new Promise((resolve) => {
+            releaseFirstRender = () => {
+              activeRenders -= 1;
+              resolve();
+            };
+          });
+        }
+        activeRenders -= 1;
+        return Promise.resolve();
+      }
+    },
+    schedule: {
+      set: scheduleSpy.schedule,
+      clear: scheduleSpy.clear
+    },
+    logger: { warn() {} }
+  });
+
+  const firstPoll = controller.poll();
+  await Promise.resolve();
+
+  assert.deepEqual(renderedSnapshots, ['<p>alpha</p>']);
+  assert.equal(scheduleSpy.calls.at(-1).delay, 500);
+
+  previewNode.innerHTML = '<p>beta</p>';
+  await scheduleSpy.calls.at(-1).fn();
+  previewNode.innerHTML = '<p>gamma</p>';
+  await scheduleSpy.calls.at(-1).fn();
+
+  assert.deepEqual(renderedSnapshots, ['<p>alpha</p>']);
+  assert.equal(maxConcurrentRenders, 1);
+
+  releaseFirstRender();
+  await firstPoll;
+
+  assert.deepEqual(renderedSnapshots, ['<p>alpha</p>', '<p>gamma</p>']);
+  assert.equal(maxConcurrentRenders, 1);
+});
+
 test('controller injects and typesets iframe previews, then reinjects for a replacement iframe', async () => {
   const iframeHeadOne = {
     ownerDocument: {

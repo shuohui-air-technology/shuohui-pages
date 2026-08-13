@@ -22,11 +22,8 @@ jobs:
         with:
           submodules: false
 
-      - name: Clone PaperMod theme
-        run: |
-          git clone https://github.com/adityatelange/hugo-PaperMod.git themes/PaperMod
-          git -C themes/PaperMod checkout d3768854d00ad003b0a8dbdba254ce9224377a01
-          rm -rf themes/PaperMod/.git
+      - name: Bootstrap PaperMod theme
+        run: python3 scripts/bootstrap_theme.py
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3

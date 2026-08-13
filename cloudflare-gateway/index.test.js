@@ -98,6 +98,19 @@ test('callback returns an explicit OAuth error response and clears state', async
   assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
 });
 
+test('misconfigured callback response clears state', async () => {
+  const response = await worker.fetch(
+    new Request(
+      'https://shuohui-cms-oauth.shuohui.workers.dev/callback?code=code&state=expected',
+      { headers: { Cookie: 'oauth_state=expected' } },
+    ),
+    { GITHUB_CLIENT_ID: 'client-id' },
+  );
+
+  assert.equal(response.status, 500);
+  assert.match(response.headers.get('set-cookie'), /Max-Age=0/);
+});
+
 test('callback exchanges a valid code and returns the Sveltia success message', async () => {
   const originalFetch = globalThis.fetch;
   try {

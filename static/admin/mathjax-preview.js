@@ -75,7 +75,9 @@
     var stopped = false;
     var pending = false;
     var queued = false;
-    var state = { node: null, mode: 'none', snapshot: '' };
+    var observed = { node: null, mode: 'none', snapshot: '' };
+    var rendered = { node: null, mode: 'none', snapshot: '' };
+    var rendering = null;
     var injectedIframe = null;
 
     function warn(error) {
@@ -98,23 +100,19 @@
       injectedIframe = iframe;
     }
 
-    function renderCurrentPreview() {
-      if (stopped || state.mode === 'none') return Promise.resolve(false);
-      if (pending) {
-        queued = true;
-        return Promise.resolve(false);
-      }
+    function renderPreview(snapshot) {
+      if (stopped || snapshot.mode === 'none') return Promise.resolve(false);
 
       try {
         var promise = null;
 
-        if (state.mode === 'inline') {
+        if (snapshot.mode === 'inline') {
           var mathJax = getMathJax();
           if (!mathJax || typeof mathJax.typesetPromise !== 'function') return Promise.resolve(false);
-          promise = mathJax.typesetPromise([state.node]);
-        } else if (state.mode === 'iframe') {
-          injectIframeMathJax(state.node);
-          var iframeWindow = state.node && state.node.contentWindow;
+          promise = mathJax.typesetPromise([snapshot.node]);
+        } else if (snapshot.mode === 'iframe') {
+          injectIframeMathJax(snapshot.node);
+          var iframeWindow = snapshot.node && snapshot.node.contentWindow;
           if (!iframeWindow || !iframeWindow.MathJax || typeof iframeWindow.MathJax.typesetPromise !== 'function') {
             return Promise.resolve(false);
           }
@@ -124,25 +122,58 @@
         if (!promise || typeof promise.then !== 'function') return Promise.resolve(false);
 
         pending = true;
+        rendering = snapshot;
         return Promise.resolve(promise).catch(function (error) {
           warn(error);
           return false;
         }).then(function (result) {
           pending = false;
+          rendering = null;
+          if (result !== false && !stopped) {
+            rendered = snapshot;
+          }
           if (queued && !stopped) {
             queued = false;
-            return renderCurrentPreview().then(function () {
-              return result;
-            });
+            if (shouldTypeset(rendered, observed)) {
+              return renderPreview(observed).then(function () {
+                return result;
+              });
+            }
+            return Promise.resolve(result);
           }
           queued = false;
           return result;
+        }, function (error) {
+          pending = false;
+          rendering = null;
+          warn(error);
+          return false;
         });
       } catch (error) {
         pending = false;
+        rendering = null;
         warn(error);
         return Promise.resolve(false);
       }
+    }
+
+    function queueIfRenderingCurrentChanged(current) {
+      if (!pending) return false;
+      if (!rendering || shouldTypeset(rendering, current)) {
+        queued = true;
+        return true;
+      }
+      return false;
+    }
+
+    function renderCurrentPreview(current) {
+      if (stopped || current.mode === 'none') return Promise.resolve(false);
+      if (queueIfRenderingCurrentChanged(current)) {
+        return Promise.resolve(false);
+      }
+      if (pending) return Promise.resolve(false);
+
+      return renderPreview(current);
     }
 
     function poll() {
@@ -154,9 +185,9 @@
         var node = doc.querySelector(PREVIEW_SELECTOR);
         var mode = getPreviewMode(node);
 
-        if (node !== state.node) {
+        if (node !== observed.node) {
           injectedIframe = null;
-          state = { node: node, mode: mode, snapshot: '' };
+          observed = { node: node, mode: mode, snapshot: '' };
         }
 
         if (mode === 'iframe') {
@@ -169,22 +200,17 @@
           snapshot: readSnapshot(node, mode)
         };
 
-        changed = shouldTypeset(state, current);
-        state = current;
+        observed = current;
+        changed = shouldTypeset(rendered, current);
 
         if (!changed) {
           scheduleNext(false);
           return Promise.resolve(false);
         }
 
-        return renderCurrentPreview().then(function (result) {
-          scheduleNext(true);
-          return result;
-        }, function (error) {
-          warn(error);
-          scheduleNext(true);
-          return false;
-        });
+        var renderPromise = renderCurrentPreview(current);
+        scheduleNext(true);
+        return renderPromise;
       } catch (error) {
         warn(error);
         scheduleNext(changed);

@@ -7,7 +7,7 @@ This repository hosts the Hugo site for [shuohui.uk](https://shuohui.uk/) and th
 - Hugo: `0.163.2 extended`
 - PaperMod: `d3768854d00ad003b0a8dbdba254ce9224377a01`
 
-The GitHub Pages workflow clones PaperMod locally into `themes/PaperMod` during builds. That directory, Hugo's lockfile, generated `public/`, local Wrangler state, and worktree scratch space are intentionally local-only and should not be committed.
+The shared bootstrap script obtains PaperMod locally in `themes/PaperMod` during CI and local builds. That directory, Hugo's lockfile, generated `public/`, local Wrangler state, and worktree scratch space are intentionally local-only and should not be committed.
 
 ## Local validation
 
@@ -17,6 +17,7 @@ Run these commands from the repository root:
 python3 -m unittest discover -s tests -v
 python3 scripts/content_tools.py validate content
 python3 scripts/content_tools.py normalize content
+python3 scripts/bootstrap_theme.py
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-public
 node --test tests/mathjax-config.test.mjs tests/mathjax-preview.test.mjs
 node --test cloudflare-gateway/index.test.js
@@ -25,6 +26,7 @@ node --test cloudflare-gateway/index.test.js
 For a release-grade smoke check, build and verify the generated output explicitly:
 
 ```bash
+python3 scripts/bootstrap_theme.py
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
 python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --required acgn/index.html \

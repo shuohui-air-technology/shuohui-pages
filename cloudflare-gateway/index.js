@@ -199,6 +199,9 @@ export default {
     }
 
     if (!clientId || !clientSecret) {
+      if (url.pathname === CALLBACK_PATH) {
+        return callbackResponse('OAuth gateway misconfigured.', 500);
+      }
       return new Response('OAuth gateway misconfigured.', {
         status: 500,
         headers: buildHeaders({ 'Content-Type': 'text/plain;charset=UTF-8' }),

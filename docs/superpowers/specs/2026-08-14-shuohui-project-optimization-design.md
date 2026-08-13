@@ -1,7 +1,7 @@
 # shuohui.uk 项目整体优化设计
 
-**日期：** 2026-08-14  
-**目标分支：** `codex/shuohui-optimization`  
+**日期：** 2026-08-14\
+**目标分支：** `codex/shuohui-optimization`\
 **基线版本：** 远程 `main` 的 `457f86a`
 
 ## 1. 背景与问题
