@@ -64,11 +64,13 @@
 
   function createPreviewController(options) {
     var doc = options.document;
-    var mathJax = options.mathJax || null;
     var schedule = options.schedule || {};
     var setTimer = schedule.set || function (fn, delay) { return setTimeout(fn, delay); };
     var clearTimer = schedule.clear || function (handle) { clearTimeout(handle); };
     var logger = options.logger || console;
+    var getMathJax = typeof options.getMathJax === 'function'
+      ? options.getMathJax
+      : function () { return options.mathJax || null; };
     var timerHandle = null;
     var stopped = false;
     var pending = false;
@@ -107,6 +109,7 @@
         var promise = null;
 
         if (state.mode === 'inline') {
+          var mathJax = getMathJax();
           if (!mathJax || typeof mathJax.typesetPromise !== 'function') return Promise.resolve(false);
           promise = mathJax.typesetPromise([state.node]);
         } else if (state.mode === 'iframe') {
@@ -210,7 +213,9 @@
 
     var controller = createPreviewController({
       document: hostWindow.document,
-      mathJax: hostWindow.MathJax,
+      getMathJax: function () {
+        return hostWindow.MathJax;
+      },
       logger: hostWindow.console,
       schedule: {
         set: function (fn, delay) {

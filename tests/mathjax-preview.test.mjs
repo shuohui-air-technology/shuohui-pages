@@ -76,6 +76,48 @@ test('controller typesets inline preview content changes and idles on no-op poll
   assert.equal(scheduleSpy.calls.at(-1).delay, 2000);
 });
 
+test('browser controller recovers when MathJax loads after startup', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
+  const timers = [];
+  const hostWindow = {
+    MathJax: undefined,
+    document: {
+      querySelector(selector) {
+        assert.equal(selector, '[role="document"]');
+        return previewNode;
+      }
+    },
+    console: { warn() {} },
+    setTimeout(fn, delay) {
+      const handle = { fn, delay, cleared: false };
+      timers.push(handle);
+      return handle;
+    },
+    clearTimeout(handle) {
+      if (handle) handle.cleared = true;
+    }
+  };
+
+  const controller = preview.startBrowserController(hostWindow);
+
+  await Promise.resolve();
+
+  assert.equal(timers.at(-1).delay, 500);
+
+  const typesetCalls = [];
+  hostWindow.MathJax = {
+    typesetPromise(nodes) {
+      typesetCalls.push(nodes);
+      return Promise.resolve();
+    }
+  };
+  previewNode.innerHTML = '<p>beta</p>';
+
+  await controller.poll();
+
+  assert.deepEqual(typesetCalls, [[previewNode]]);
+});
+
 test('controller injects and typesets iframe previews, then reinjects for a replacement iframe', async () => {
   const iframeHeadOne = {
     ownerDocument: {
