@@ -76,6 +76,46 @@ test('controller typesets inline preview content changes and idles on no-op poll
   assert.equal(scheduleSpy.calls.at(-1).delay, 2000);
 });
 
+test('controller returns missing-preview polling to idle after a rendered preview is removed', async () => {
+  let previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
+  const scheduleSpy = createScheduleSpy();
+  const typesetCalls = [];
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return previewNode; } },
+    mathJax: {
+      typesetPromise(nodes) {
+        typesetCalls.push(nodes);
+        return Promise.resolve();
+      }
+    },
+    schedule: {
+      set: scheduleSpy.schedule,
+      clear: scheduleSpy.clear
+    },
+    logger: { warn() {} }
+  });
+
+  await controller.poll();
+
+  assert.deepEqual(typesetCalls, [[previewNode]]);
+  assert.equal(scheduleSpy.calls.at(-1).delay, 500);
+
+  previewNode = null;
+  await controller.poll();
+
+  assert.equal(scheduleSpy.calls.at(-1).delay, 500);
+
+  await controller.poll();
+
+  assert.equal(scheduleSpy.calls.at(-1).delay, 2000);
+
+  previewNode = { tagName: 'DIV', innerHTML: '<p>beta</p>' };
+  await controller.poll();
+
+  assert.deepEqual(typesetCalls, [[{ tagName: 'DIV', innerHTML: '<p>alpha</p>' }], [previewNode]]);
+  assert.equal(scheduleSpy.calls.at(-1).delay, 500);
+});
+
 test('browser controller recovers when MathJax loads after startup', async () => {
   const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
   const timers = [];

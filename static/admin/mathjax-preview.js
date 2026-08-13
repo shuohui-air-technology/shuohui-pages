@@ -129,7 +129,7 @@
         }).then(function (result) {
           pending = false;
           rendering = null;
-          if (result !== false && !stopped) {
+          if (result !== false && !stopped && !shouldTypeset(snapshot, observed)) {
             rendered = snapshot;
           }
           if (queued && !stopped) {
@@ -202,6 +202,9 @@
 
         observed = current;
         changed = shouldTypeset(rendered, current);
+        if (mode === 'none') {
+          rendered = current;
+        }
 
         if (!changed) {
           scheduleNext(false);
