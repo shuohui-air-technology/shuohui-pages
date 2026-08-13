@@ -10,127 +10,21 @@
   </head>
   <body>
     <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
+    <script src="/admin/mathjax-preview.js"></script>
     <script>
       (function () {
-        var PREVIEW_SEL = '[role="document"]';
-        var POLL_IDLE_MS = 2000;
-        var POLL_ACTIVE_MS = 500;
-        var lastContent = '';
-        var typing = false;
-        var mathjaxInjected = false;
-        var lastIframeContent = '';
-        var activeTimer = null;
-
-        function getPreview() {
-          return document.querySelector(PREVIEW_SEL);
-        }
-
-        function isIframe(el) {
-          return el && el.tagName === 'IFRAME';
-        }
-
-        function typesetMain() {
-          if (typeof MathJax === 'undefined' || !MathJax.typesetPromise) return;
-          var el = getPreview();
-          if (!el || isIframe(el) || typing) return;
-          typing = true;
-          MathJax.typesetPromise([el]).then(function () {
-            typing = false;
-          }).catch(function () { typing = false; });
-        }
-
-        function appendIframeMathJaxCdn(head) {
-          var script = head.ownerDocument.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-          script.async = true;
-          head.appendChild(script);
-        }
-
-        function appendIframeMathJaxScripts(head) {
-          var cdnAppended = false;
-
-          function appendCdnOnce() {
-            if (cdnAppended) return;
-            cdnAppended = true;
-            appendIframeMathJaxCdn(head);
-          }
-
-          var configScript = head.ownerDocument.createElement('script');
-          configScript.src = '/js/mathjax-config.js';
-          configScript.onload = appendCdnOnce;
-          configScript.onerror = appendCdnOnce;
-          head.appendChild(configScript);
-        }
-
-        function injectMathJaxIntoIframe(iframe) {
-          if (mathjaxInjected) return;
-          try {
-            var doc = iframe.contentDocument;
-            if (!doc || !doc.head) return;
-            appendIframeMathJaxScripts(doc.head);
-            mathjaxInjected = true;
-          } catch (e) {}
-        }
-
-        function typesetIframe(iframe) {
-          try {
-            var win = iframe.contentWindow;
-            if (win && win.MathJax && win.MathJax.typesetPromise) {
-              if (typing) return;
-              typing = true;
-              win.MathJax.typesetPromise().then(function () {
-                typing = false;
-              }).catch(function () { typing = false; });
-              return true;
-            }
-          } catch (e) {}
-          return false;
-        }
-
-        function scheduleNext(ms) {
-          setTimeout(poll, ms);
-        }
-
-        function poll() {
-          var el = getPreview();
-          if (!el) {
-            scheduleNext(POLL_IDLE_MS);
+        function startPreview() {
+          if (!window.ShuohuiMathJaxPreview || !window.ShuohuiMathJaxPreview.startBrowserController) {
             return;
           }
 
-          var changed = false;
-
-          if (isIframe(el)) {
-            injectMathJaxIntoIframe(el);
-            try {
-              var iframeBody = el.contentDocument && el.contentDocument.body;
-              var iframeContent = iframeBody ? iframeBody.innerHTML : '';
-              if (iframeContent !== lastIframeContent) {
-                lastIframeContent = iframeContent;
-                changed = true;
-              }
-            } catch (e) {}
-            if (changed) typesetIframe(el);
-          } else {
-            var content = el.innerHTML;
-            if (content !== lastContent) {
-              lastContent = content;
-              changed = true;
-              typesetMain();
-            }
-          }
-
-          if (changed) {
-            scheduleNext(POLL_ACTIVE_MS);
-          } else {
-            scheduleNext(POLL_IDLE_MS);
-          }
+          window.ShuohuiMathJaxPreview.startBrowserController(window);
         }
 
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', poll);
+          document.addEventListener('DOMContentLoaded', startPreview, { once: true });
         } else {
-          poll();
+          startPreview();
         }
       })();
     </script>

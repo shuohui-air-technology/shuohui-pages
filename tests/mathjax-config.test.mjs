@@ -2,26 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { createRequire } from 'node:module';
 
-function extractFunctionSource(source, name) {
-  const start = source.indexOf(`function ${name}(`);
-  assert.notEqual(start, -1, `expected function ${name} to exist`);
-
-  const openBrace = source.indexOf('{', start);
-  assert.notEqual(openBrace, -1, `expected function ${name} to have a body`);
-
-  let depth = 0;
-  for (let index = openBrace; index < source.length; index += 1) {
-    const char = source[index];
-    if (char === '{') depth += 1;
-    if (char === '}') depth -= 1;
-    if (depth === 0) {
-      return source.slice(start, index + 1);
-    }
-  }
-
-  assert.fail(`could not extract function ${name}`);
-}
+const require = createRequire(import.meta.url);
+const preview = require('../static/admin/mathjax-preview.js');
 
 test('shared MathJax config defines the four supported delimiters', () => {
   const source = fs.readFileSync('static/js/mathjax-config.js', 'utf8');
@@ -35,12 +19,6 @@ test('shared MathJax config defines the four supported delimiters', () => {
 });
 
 test('iframe MathJax injector appends the CDN only after the config script loads', () => {
-  const adminHtml = fs.readFileSync('static/admin/index.html', 'utf8');
-  const scriptSource = [
-    extractFunctionSource(adminHtml, 'appendIframeMathJaxCdn'),
-    extractFunctionSource(adminHtml, 'appendIframeMathJaxScripts')
-  ].join('\n');
-
   const appended = [];
   const head = {
     ownerDocument: {
@@ -54,9 +32,7 @@ test('iframe MathJax injector appends the CDN only after the config script loads
     }
   };
 
-  const context = {};
-  vm.runInNewContext(scriptSource, context);
-  context.appendIframeMathJaxScripts(head);
+  preview.appendIframeMathJaxScripts(head);
 
   assert.equal(appended.length, 1);
   assert.equal(appended[0].src, '/js/mathjax-config.js');
@@ -73,12 +49,6 @@ test('iframe MathJax injector appends the CDN only after the config script loads
 });
 
 test('iframe MathJax injector still appends the CDN if the config script fails', () => {
-  const adminHtml = fs.readFileSync('static/admin/index.html', 'utf8');
-  const scriptSource = [
-    extractFunctionSource(adminHtml, 'appendIframeMathJaxCdn'),
-    extractFunctionSource(adminHtml, 'appendIframeMathJaxScripts')
-  ].join('\n');
-
   const appended = [];
   const head = {
     ownerDocument: {
@@ -92,9 +62,7 @@ test('iframe MathJax injector still appends the CDN if the config script fails',
     }
   };
 
-  const context = {};
-  vm.runInNewContext(scriptSource, context);
-  context.appendIframeMathJaxScripts(head);
+  preview.appendIframeMathJaxScripts(head);
 
   assert.equal(appended.length, 1);
   assert.equal(appended[0].src, '/js/mathjax-config.js');
