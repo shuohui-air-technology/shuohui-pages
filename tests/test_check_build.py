@@ -31,6 +31,18 @@ class BuildCheckTests(unittest.TestCase):
             errors = check_build(public, [], ["draft/index.html"])
             self.assertEqual(errors, ["forbidden output exists: draft/index.html"])
 
+    def test_absolute_and_traversal_paths_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            public = Path(directory)
+            errors = check_build(public, ["/etc/hosts"], ["../escape.txt"])
+            self.assertEqual(
+                errors,
+                [
+                    "invalid output path: /etc/hosts",
+                    "invalid output path: ../escape.txt",
+                ],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

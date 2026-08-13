@@ -10,6 +10,14 @@ def _normalize_relative_path(path: str) -> str:
     return Path(path).as_posix()
 
 
+def _validate_relative_path(path: str) -> str | None:
+    normalized_path = _normalize_relative_path(path)
+    candidate = Path(normalized_path)
+    if candidate.is_absolute() or ".." in candidate.parts:
+        return f"invalid output path: {normalized_path}"
+    return None
+
+
 def check_build(
     public_dir: Path, required: Iterable[str], forbidden: Iterable[str]
 ) -> list[str]:
@@ -17,11 +25,19 @@ def check_build(
 
     for relative_path in required:
         normalized_path = _normalize_relative_path(relative_path)
+        invalid_path_error = _validate_relative_path(relative_path)
+        if invalid_path_error is not None:
+            errors.append(invalid_path_error)
+            continue
         if not (public_dir / normalized_path).is_file():
             errors.append(f"missing required output: {normalized_path}")
 
     for relative_path in forbidden:
         normalized_path = _normalize_relative_path(relative_path)
+        invalid_path_error = _validate_relative_path(relative_path)
+        if invalid_path_error is not None:
+            errors.append(invalid_path_error)
+            continue
         if (public_dir / normalized_path).is_file():
             errors.append(f"forbidden output exists: {normalized_path}")
 
