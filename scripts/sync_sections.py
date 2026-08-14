@@ -67,18 +67,18 @@ def validate_sections(sections: list[dict[str, object]], content_root: Path) -> 
         path.name for path in content_root.iterdir() if path.is_dir() and path.name != "_index.md"
     }
 
-    missing_dirs = sorted(expected_dirs - actual_dirs)
-    if missing_dirs:
-        missing_slug = missing_dirs[0]
-        raise ValueError(
-            f"content/{missing_slug}: missing section directory for registered slug"
-        )
-
     unregistered_dirs = sorted(actual_dirs - expected_dirs)
     if unregistered_dirs:
         unregistered_slug = unregistered_dirs[0]
         raise ValueError(
             f"content/{unregistered_slug}: existing section directory is not registered"
+        )
+
+    missing_dirs = sorted(expected_dirs - actual_dirs)
+    if missing_dirs:
+        missing_slug = missing_dirs[0]
+        raise ValueError(
+            f"content/{missing_slug}: missing section directory for registered slug"
         )
 
 

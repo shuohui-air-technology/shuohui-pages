@@ -104,7 +104,10 @@ class SectionRegistryTests(unittest.TestCase):
                 {"name": "随笔", "slug": "acgn", "weight": 20, "math": False},
             ]
 
-            with self.assertRaisesRegex(ValueError, "content/math"):
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^content/math: existing section directory is not registered$",
+            ):
                 validate_sections(sections, root / "content")
 
     def test_render_section_index_matches_current_acgn_semantics(self):
