@@ -281,6 +281,13 @@ class SectionRegistryTests(unittest.TestCase):
         release_block_end = readme.index("```", release_block_start + len("```bash"))
         release_block = readme[release_block_start:release_block_end]
 
+        normal_sync = normal_block.index(command)
+        for validation_command in (
+            "python3 scripts/content_tools.py normalize content",
+            "python3 scripts/content_tools.py validate content",
+        ):
+            self.assertLess(normal_sync, normal_block.index(validation_command))
+
         for block in (normal_block, release_block):
             self.assertIn(command, block)
             self.assertLess(block.index(command), block.index("hugo --minify"))
