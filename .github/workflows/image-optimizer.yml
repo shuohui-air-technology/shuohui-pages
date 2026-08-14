@@ -1,15 +1,24 @@
 name: Image Optimizer
-on: [push]
+
+on:
+  push:
+    paths:
+      - 'static/images/**'
+
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Compress Images
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Compress Images
         id: calibre
-        uses: calibreapp/image-actions@main
+        uses: calibreapp/image-actions@9d037c06280028c110ff61c433ad4dc7d33c3c43 # v1.5.0
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           compressOnly: true

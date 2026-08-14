@@ -399,6 +399,30 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn("`admin`", readme)
         self.assertIn("before deployment", readme)
 
+    def test_image_optimizer_is_scoped_and_pinned(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        workflow = (
+            repository_root / ".github" / "workflows" / "image-optimizer.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("paths:", workflow)
+        self.assertIn("- 'static/images/**'", workflow)
+        self.assertIn("if: github.actor != 'github-actions[bot]'", workflow)
+        self.assertIn("uses: actions/checkout@v4", workflow)
+        self.assertIn(
+            "uses: calibreapp/image-actions@9d037c06280028c110ff61c433ad4dc7d33c3c43",
+            workflow,
+        )
+        self.assertIn("permissions:\n  contents: write", workflow)
+
+    def test_pages_deployment_prefers_the_newest_build(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        workflow = (repository_root / ".github" / "workflows" / "hugo.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('cancel-in-progress: true', workflow)
+
     def _write_content_layout(self, repo_root: Path, section_slugs: list[str]) -> None:
         content_root = repo_root / "content"
         content_root.mkdir()
