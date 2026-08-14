@@ -4,3 +4,4 @@ public/
 themes/
 cloudflare-gateway/.wrangler/
 .worktrees/
+.superpowers/
