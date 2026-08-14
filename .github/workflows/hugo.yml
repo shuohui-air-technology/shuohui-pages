@@ -45,6 +45,7 @@ jobs:
       - name: Check generated outputs
         run: |
           python3 scripts/check_build.py --public public \
+            --sections data/sections.json \
             --required acgn/index.html \
             --required math/index.html \
             --required sitemap.xml \

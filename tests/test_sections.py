@@ -66,6 +66,19 @@ class SectionRegistryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "slug.*Math Notes"):
                 validate_sections(sections, root / "content")
 
+    def test_validate_sections_rejects_reserved_admin_slug(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_content_layout(root, ["math", "acgn", "admin"])
+            sections = [
+                {"name": "学术推导与笔记", "slug": "math", "weight": 10, "math": True},
+                {"name": "随笔", "slug": "acgn", "weight": 20, "math": False},
+                {"name": "后台", "slug": "admin", "weight": 30, "math": False},
+            ]
+
+            with self.assertRaisesRegex(ValueError, r"slug.*reserved.*admin"):
+                validate_sections(sections, root / "content")
+
     def test_validate_sections_rejects_non_integer_weight(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -262,6 +275,7 @@ class SectionRegistryTests(unittest.TestCase):
         command = "python3 scripts/sync_sections.py"
 
         self.assertIn(command, workflow)
+        self.assertIn("--sections data/sections.json", workflow)
         workflow_sync = workflow.index(command)
         self.assertLess(
             workflow.index("python3 scripts/bootstrap_theme.py"),
@@ -293,11 +307,14 @@ class SectionRegistryTests(unittest.TestCase):
             self.assertLess(block.index(command), block.index("hugo --minify"))
 
         self.assertIn("data/sections.json", readme)
+        self.assertIn("--sections data/sections.json", release_block)
         self.assertIn("single source of truth", readme)
         self.assertIn("change `name` and `weight`", readme)
         self.assertIn("keep existing `slug` values stable", readme)
         self.assertIn("renaming or reordering a section", readme)
         self.assertIn("invalid `slug`", readme)
+        self.assertIn("reserved", readme)
+        self.assertIn("`admin`", readme)
         self.assertIn("before deployment", readme)
 
     def _write_content_layout(self, repo_root: Path, section_slugs: list[str]) -> None:

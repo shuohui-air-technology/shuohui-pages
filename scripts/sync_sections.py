@@ -56,6 +56,8 @@ def validate_sections(
         slug = section.get("slug")
         if not isinstance(slug, str) or not SLUG_RE.fullmatch(slug):
             raise ValueError(f"{location}: slug: invalid value {slug!r}")
+        if slug == "admin":
+            raise ValueError(f"{location}: slug: reserved value 'admin'")
         if slug in seen_slugs:
             raise ValueError(f"{location}: slug: duplicate value {slug!r}")
         seen_slugs.add(slug)

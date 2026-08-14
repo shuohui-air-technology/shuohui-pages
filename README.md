@@ -27,7 +27,8 @@ node --test cloudflare-gateway/index.test.js
 `data/sections.json` is the single source of truth for section names, order, and
 slugs. When renaming or reordering a section, change `name` and `weight` as
 needed; keep existing `slug` values stable so existing URLs do not change. An
-invalid `slug` value fails during synchronization before deployment.
+invalid `slug` value fails during synchronization before deployment. The slug
+`admin` is reserved for the CMS route and cannot be registered as a section.
 
 For a release-grade smoke check, build and verify the generated output explicitly:
 
@@ -36,6 +37,7 @@ python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
 python3 scripts/check_build.py --public /tmp/shuohui-final-public \
+  --sections data/sections.json \
   --required acgn/index.html \
   --required math/index.html \
   --required sitemap.xml \
