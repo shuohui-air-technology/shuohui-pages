@@ -13,7 +13,12 @@ FRONT_MATTER_DATE_RE = re.compile(
     r"^date:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})$"
 )
 ORDERED_MARKER_RE = re.compile(r"^\s*\d+[.)、](?=\S)")
-STANDALONE_LABEL_RE = re.compile(r"^\s*(?![#>*`-])[^\s].{0,38}[：:]\s*$")
+MALFORMED_ORDERED_TITLE_RE = re.compile(r"^(\s*)(\d+)[.)、](\S.*)$")
+STANDALONE_LABEL_RE = re.compile(
+    r"^\s*(?![#>*`-])(?!.*[。！？!?；;])[^\s].{0,38}[：:]\s*$"
+)
+HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
+LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]\s+|\d+[.)、]\s+)\S")
 
 
 def normalize_date_text(text: str) -> str:
@@ -162,6 +167,94 @@ def validate_markdown_structure(text: str) -> list[str]:
     return errors
 
 
+def _is_heading(line: str) -> bool:
+    return bool(HEADING_RE.match(line))
+
+
+def _is_list_item(line: str) -> bool:
+    return bool(LIST_ITEM_RE.match(line))
+
+
+def _normalize_markdown_body(body: str) -> str:
+    newline = "\r\n" if "\r\n" in body else "\n"
+    had_trailing_newline = body.endswith(("\n", "\r"))
+    lines = body.replace("\r\n", "\n").split("\n")
+    if had_trailing_newline and lines and lines[-1] == "":
+        lines.pop()
+
+    transformed: list[str] = []
+    in_fence = False
+    for line in lines:
+        stripped = line.strip()
+        if in_fence:
+            transformed.append(line)
+            if stripped.startswith(("```", "~~~")):
+                in_fence = False
+            continue
+        if stripped.startswith(("```", "~~~")):
+            transformed.append(line)
+            in_fence = True
+            continue
+
+        title_match = MALFORMED_ORDERED_TITLE_RE.match(line)
+        if title_match and len(title_match.group(3).strip()) <= 80:
+            line = (
+                f"{title_match.group(1)}## {title_match.group(2)}. "
+                f"{title_match.group(3).strip()}"
+            )
+        elif STANDALONE_LABEL_RE.match(line):
+            label = stripped[:-1].rstrip()
+            line = f"### {label}"
+        transformed.append(line)
+
+    normalized: list[str] = []
+    for index, line in enumerate(transformed):
+        stripped = line.strip()
+        if not stripped:
+            normalized.append(line)
+            continue
+
+        previous = transformed[index - 1] if index else ""
+        previous_stripped = previous.strip()
+        needs_blank = bool(normalized and normalized[-1].strip()) and (
+            _is_heading(line)
+            or _is_heading(previous)
+            or (_is_list_item(previous) and not _is_list_item(line))
+            or _looks_like_paragraph_boundary(previous_stripped, stripped)
+        )
+        if needs_blank:
+            normalized.append("")
+        normalized.append(line)
+
+    result = newline.join(normalized)
+    return result + (newline if had_trailing_newline else "")
+
+
+def normalize_markdown_structure(text: str) -> str:
+    """Conservatively format common Markdown structure in non-math entries."""
+    front_matter = parse_front_matter(text)
+    if not front_matter or front_matter.get("math") is True:
+        return text
+
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        return text
+    closing_index = next(
+        (
+            index
+            for index, line in enumerate(lines[1:], start=1)
+            if line.strip() == "---"
+        ),
+        None,
+    )
+    if closing_index is None:
+        return text
+
+    prefix = "".join(lines[: closing_index + 1])
+    body = "".join(lines[closing_index + 1 :])
+    return prefix + _normalize_markdown_body(body)
+
+
 def _looks_like_paragraph_boundary(current: str, following: str) -> bool:
     if len(current) > 48 or len(following) < 30:
         return False
@@ -183,6 +276,8 @@ def normalize_files(content_dir: Path) -> int:
     for path in iter_markdown_files(content_dir):
         original = path.read_text(encoding="utf-8")
         updated = normalize_date_text(original)
+        if path.parent.name != "math":
+            updated = normalize_markdown_structure(updated)
         if updated != original:
             path.write_text(updated, encoding="utf-8")
             changed += 1

@@ -5,6 +5,7 @@ from pathlib import Path
 from scripts.content_tools import (
     iter_markdown_files,
     normalize_files,
+    normalize_markdown_structure,
     normalize_date_text,
     parse_front_matter,
     validate_markdown_structure,
@@ -14,6 +15,41 @@ from scripts.content_tools import (
 
 
 class ContentToolsTests(unittest.TestCase):
+    def test_normalize_markdown_structure_formats_common_article_boundaries(self):
+        source = (
+            "---\ntitle: Example\ndate: 2026-08-14T10:00:00\nmath: false\n---\n\n"
+            "1.Agent\n"
+            "这是一个用于说明段落分隔问题的较长文本，后面本应是一个新的段落。\n"
+            "优点：\n"
+            "这是优点内容。\n"
+        )
+
+        normalized = normalize_markdown_structure(source)
+
+        self.assertIn("## 1. Agent\n\n", normalized)
+        self.assertIn("\n\n这是一个用于说明段落分隔问题的较长文本", normalized)
+        self.assertIn("### 优点\n\n", normalized)
+        self.assertEqual(normalized, normalize_markdown_structure(normalized))
+
+    def test_normalize_markdown_structure_leaves_math_content_unchanged(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\nmath: true\n---\n\n"
+            "这是公式前的文字\n"
+            "$$x^2 + y^2 = z^2$$\n"
+            "这是公式后的文字\n"
+        )
+
+        self.assertEqual(source, normalize_markdown_structure(source))
+
+    def test_normalize_markdown_structure_keeps_sentence_introducing_a_list_as_text(self):
+        source = (
+            "---\ntitle: Home\ndate: 2026-08-14T10:00:00\nmath: false\n---\n\n"
+            "这是一个用于记录我个人感悟与思考的空间。内容主要包括：\n\n"
+            "- 日常随笔\n"
+        )
+
+        self.assertEqual(source, normalize_markdown_structure(source))
+
     def test_normalize_date_text_adds_missing_seconds(self):
         source = "---\ndate: 2026-06-15T20:37\n---\n"
         self.assertIn("date: 2026-06-15T20:37:00", normalize_date_text(source))
