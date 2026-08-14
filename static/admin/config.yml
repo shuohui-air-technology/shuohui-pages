@@ -93,4 +93,3 @@ collections:
           - {label: "图片替代文字(Alt)", name: "alt", widget: "string", required: false}
           - {label: "使用相对路径", name: "relative", widget: "boolean", default: true, required: false}
       - {label: "正文内容", name: "body", widget: "markdown"}
-

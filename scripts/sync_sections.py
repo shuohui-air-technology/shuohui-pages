@@ -107,7 +107,7 @@ def render_admin_config(sections: list[dict[str, object]], template: str) -> str
         raise ValueError("admin config template is missing the article-collection marker")
 
     collections = "\n".join(_render_article_collection(section) for section in sections)
-    return template.replace(ARTICLE_COLLECTIONS_MARKER, collections)
+    return template.replace(ARTICLE_COLLECTIONS_MARKER, collections).rstrip("\n") + "\n"
 
 
 def sync_sections(repo_root: Path) -> None:
