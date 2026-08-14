@@ -113,6 +113,17 @@ def validate_front_matter(path: Path) -> list[str]:
     errors: list[str] = []
     is_section_index = path.name == "_index.md"
 
+    seen_keys: set[str] = set()
+    for line in front_matter:
+        if not line or line[0].isspace() or ":" not in line:
+            continue
+        key = line.split(":", 1)[0].strip()
+        if not key:
+            continue
+        if key in seen_keys:
+            errors.append(f"{path}: front matter: duplicate key: {key}")
+        seen_keys.add(key)
+
     if "title" not in parsed or not isinstance(parsed["title"], str) or not parsed["title"]:
         errors.append(f"{path}: title: missing")
 

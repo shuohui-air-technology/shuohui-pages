@@ -103,6 +103,19 @@ class ContentToolsTests(unittest.TestCase):
             self.assertTrue(any(error.endswith("math: missing") for error in errors))
             self.assertTrue(any(error.endswith("comments: missing") for error in errors))
 
+    def test_validate_front_matter_rejects_duplicate_top_level_keys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "duplicate.md"
+            path.write_text(
+                "---\ntitle: Duplicate\ndate: 2026-06-09T10:24:00\n"
+                "draft: false\ndraft: true\nmath: false\ncomments: true\n---\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_front_matter(path)
+
+            self.assertTrue(any("duplicate key" in error and "draft" in error for error in errors))
+
     def test_validate_files_rejects_missing_local_images(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

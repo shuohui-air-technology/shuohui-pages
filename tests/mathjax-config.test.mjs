@@ -18,6 +18,27 @@ test('shared MathJax config defines the four supported delimiters', () => {
   assert.equal(config.tex.processEnvironments, true);
 });
 
+test('all project MathJax loaders use the same pinned runtime', () => {
+  const expected = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js';
+  const files = [
+    'layouts/partials/extend_head.html',
+    'static/admin/index.html',
+    'static/admin/mathjax-preview.js'
+  ];
+
+  for (const file of files) {
+    const source = fs.readFileSync(file, 'utf8');
+    assert.match(source, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.doesNotMatch(source, /mathjax@3\/es5/);
+  }
+});
+
+test('Hugo uses the current locale configuration key', () => {
+  const source = fs.readFileSync('hugo.toml', 'utf8');
+  assert.match(source, /^locale\s*=\s*["']zh-CN["']/m);
+  assert.doesNotMatch(source, /^languageCode\s*=/m);
+});
+
 test('iframe MathJax injector appends the CDN only after the config script loads', () => {
   const appended = [];
   const head = {
@@ -37,14 +58,14 @@ test('iframe MathJax injector appends the CDN only after the config script loads
   assert.equal(appended.length, 1);
   assert.equal(appended[0].src, '/js/mathjax-config.js');
   assert.equal(
-    appended.some((node) => node.src === 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'),
+    appended.some((node) => node.src === 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js'),
     false
   );
 
   appended[0].onload();
 
   assert.equal(appended.length, 2);
-  assert.equal(appended[1].src, 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js');
+  assert.equal(appended[1].src, 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js');
   assert.equal(appended[1].async, true);
 });
 
@@ -70,6 +91,6 @@ test('iframe MathJax injector still appends the CDN if the config script fails',
   appended[0].onerror();
 
   assert.equal(appended.length, 2);
-  assert.equal(appended[1].src, 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js');
+  assert.equal(appended[1].src, 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js');
   assert.equal(appended[1].async, true);
 });

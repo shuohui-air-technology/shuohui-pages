@@ -15,7 +15,7 @@
   var DEBOUNCE_MS = 500;
   var IDLE_RENDER_TIMEOUT_MS = 1000;
   var LOG_PREFIX = '[Shuohui CMS MathJax]';
-  var IFRAME_MATHJAX_CDN = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+  var IFRAME_MATHJAX_CDN = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js';
   var MATHJAX_CONFIG_PATH = '/js/mathjax-config.js';
 
   function getPreviewMode(element) {
