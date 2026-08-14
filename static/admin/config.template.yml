@@ -5,7 +5,7 @@ backend:
   name: github
   repo: shuohui-air-technology/shuohui-pages
   branch: main
-  skip_ci: false
+  skip_ci: true
   base_url: https://shuohui-cms-oauth.shuohui.workers.dev/
   auth_endpoint: auth
 

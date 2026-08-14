@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import re
 from pathlib import Path
@@ -183,7 +184,11 @@ def _render_article_collection(section: dict[str, object]) -> str:
         '      - {label: "文章标题", name: "title", widget: "string"}\n'
         '      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}\n'
         f'      - {{label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: {math_default}}}\n'
-        '      - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}\n'
+        '      - label: "是否为草稿"\n'
+        '        name: "draft"\n'
+        '        widget: "boolean"\n'
+        '        default: false\n'
+        '        hint: "勾选后不会生成公开页面；发布草稿前请取消勾选，并选择保存并发布。"\n'
         '      - {label: "是否开启评论", name: "comments", widget: "boolean", default: true}\n'
         '      - label: "文章封面 (Cover)"\n'
         '        name: "cover"\n'
@@ -207,3 +212,20 @@ def _require_math(section: dict[str, object]) -> bool:
 
 def _yaml_bool(value: bool) -> str:
     return "true" if value else "false"
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="sync_sections.py")
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=Path.cwd(),
+        help="repository root (defaults to the current working directory)",
+    )
+    args = parser.parse_args(argv)
+    sync_sections(args.repo_root)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

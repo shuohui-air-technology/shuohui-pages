@@ -1,6 +1,8 @@
 import json
 import importlib
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,7 +23,38 @@ VALID_REGISTRY = {
 
 
 class SectionRegistryTests(unittest.TestCase):
-    def test_github_backend_explicitly_sets_skip_ci_false(self):
+    def test_sync_script_cli_generates_admin_config(self):
+        repository_root = Path(__file__).resolve().parents[1]
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data_root = root / "data"
+            data_root.mkdir()
+            shutil.copyfile(
+                repository_root / "data" / "sections.json",
+                data_root / "sections.json",
+            )
+            self._write_content_layout(root, ["math", "acgn"])
+            admin_root = root / "static" / "admin"
+            admin_root.mkdir(parents=True)
+            shutil.copyfile(
+                repository_root / "static" / "admin" / "config.template.yml",
+                admin_root / "config.template.yml",
+            )
+
+            result = subprocess.run(
+                [sys.executable, str(repository_root / "scripts" / "sync_sections.py")],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            generated = (admin_root / "config.yml").read_text(encoding="utf-8")
+            self.assertIn("skip_ci: true", generated)
+
+    def test_github_backend_defaults_to_skip_ci_true(self):
         repository_root = Path(__file__).resolve().parents[1]
 
         with tempfile.TemporaryDirectory() as directory:
@@ -44,8 +77,8 @@ class SectionRegistryTests(unittest.TestCase):
 
             template = (admin_root / "config.template.yml").read_text(encoding="utf-8")
             generated = (admin_root / "config.yml").read_text(encoding="utf-8")
-            self.assertIn("skip_ci: false", template)
-            self.assertIn("skip_ci: false", generated)
+            self.assertIn("skip_ci: true", template)
+            self.assertIn("skip_ci: true", generated)
 
     def test_load_sections_reads_current_registry_shape(self):
         with tempfile.TemporaryDirectory() as directory:
