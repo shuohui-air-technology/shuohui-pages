@@ -1,0 +1,16 @@
+{
+  "sections": [
+    {
+      "name": "学术推导与笔记",
+      "slug": "math",
+      "weight": 10,
+      "math": true
+    },
+    {
+      "name": "随笔",
+      "slug": "acgn",
+      "weight": 20,
+      "math": false
+    }
+  ]
+}
