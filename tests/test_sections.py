@@ -358,6 +358,14 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn(command, workflow)
         self.assertIn("python3 scripts/sync_sections.py --check", workflow)
         self.assertIn("--sections data/sections.json", workflow)
+        for required_output in (
+            "--required admin/index.html",
+            "--required admin/config.yml",
+            "--required admin/markdown-format.js",
+            "--required admin/mathjax-preview.js",
+            "--required js/mathjax-config.js",
+        ):
+            self.assertIn(required_output, workflow)
         workflow_sync = workflow.index(command)
         self.assertLess(
             workflow.index("python3 scripts/bootstrap_theme.py"),

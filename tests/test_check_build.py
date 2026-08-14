@@ -102,6 +102,8 @@ class BuildCheckTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             public = Path(directory)
             _write_registered_section_indexes(public, sections)
+            (public / "style.css").write_text("", encoding="utf-8")
+            (public / "logo.svg").write_text("<svg></svg>", encoding="utf-8")
             _write_html(public, "index.html", menu_with_body_link)
 
             errors = check_build(
@@ -431,6 +433,36 @@ class BuildCheckTests(unittest.TestCase):
             (public / "draft/index.html").write_text("draft", encoding="utf-8")
             errors = check_build(public, [], ["draft/index.html"])
             self.assertEqual(errors, ["forbidden output exists: draft/index.html"])
+
+    def test_missing_root_relative_static_asset_is_reported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            public = Path(directory)
+            _write_html(
+                public,
+                "admin/index.html",
+                '<script src="/admin/missing.js?v=build-1"></script>',
+            )
+
+            errors = check_build(public, [], [])
+
+            self.assertEqual(
+                errors,
+                ["missing static asset: admin/index.html -> /admin/missing.js"],
+            )
+
+    def test_url_encoded_root_relative_static_asset_is_resolved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            public = Path(directory)
+            image = public / "images" / "截图.png"
+            image.parent.mkdir(parents=True)
+            image.write_bytes(b"image")
+            _write_html(
+                public,
+                "math/index.html",
+                '<img src="/images/%E6%88%AA%E5%9B%BE.png">',
+            )
+
+            self.assertEqual(check_build(public, [], []), [])
 
     def test_absolute_and_traversal_paths_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

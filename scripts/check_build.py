@@ -3,11 +3,18 @@ from __future__ import annotations
 import argparse
 import json
 import posixpath
+import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Iterable
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
+
+
+ROOT_SRC_RE = re.compile(
+    r"\bsrc\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
+    re.IGNORECASE,
+)
 
 
 def _normalize_relative_path(path: str) -> str:
@@ -156,6 +163,29 @@ def _discover_navigation_pages(public_dir: Path) -> list[str]:
     return sorted(pages)
 
 
+def _check_root_relative_assets(public_dir: Path) -> list[str]:
+    errors: list[str] = []
+    for html_path in sorted(public_dir.rglob("*.html")):
+        relative_html_path = html_path.relative_to(public_dir).as_posix()
+        source = html_path.read_text(encoding="utf-8")
+        for match in ROOT_SRC_RE.finditer(source):
+            source_url = next(value for value in match.groups() if value is not None)
+            parsed = urlparse(source_url)
+            if parsed.scheme or parsed.netloc or not parsed.path.startswith("/"):
+                continue
+            asset_path = Path(unquote(parsed.path.lstrip("/")))
+            if asset_path.is_absolute() or ".." in asset_path.parts:
+                errors.append(
+                    f"invalid static asset: {relative_html_path} -> {parsed.path}"
+                )
+                continue
+            if not (public_dir / asset_path).is_file():
+                errors.append(
+                    f"missing static asset: {relative_html_path} -> {parsed.path}"
+                )
+    return errors
+
+
 def check_build(
     public_dir: Path,
     required: Iterable[str],
@@ -182,6 +212,8 @@ def check_build(
             continue
         if (public_dir / normalized_path).is_file():
             errors.append(f"forbidden output exists: {normalized_path}")
+
+    errors.extend(_check_root_relative_assets(public_dir))
 
     if sections is not None:
         registered_sections = list(sections)

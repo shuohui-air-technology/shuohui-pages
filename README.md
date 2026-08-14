@@ -38,10 +38,15 @@ python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
 python3 scripts/sync_sections.py --check
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
-python3 scripts/check_build.py --public /tmp/shuohui-final-public \
+  python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --sections data/sections.json \
   --required acgn/index.html \
   --required math/index.html \
+  --required admin/index.html \
+  --required admin/config.yml \
+  --required admin/markdown-format.js \
+  --required admin/mathjax-preview.js \
+  --required js/mathjax-config.js \
   --required sitemap.xml
 hugo list all > /tmp/shuohui-hugo-list.csv
 python3 scripts/check_content_outputs.py \
