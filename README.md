@@ -17,6 +17,7 @@ Run these commands from the repository root:
 python3 -m unittest discover -s tests -v
 python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
+python3 scripts/sync_sections.py --check
 python3 scripts/content_tools.py normalize content
 python3 scripts/content_tools.py validate content
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-public
@@ -35,6 +36,7 @@ For a release-grade smoke check, build and verify the generated output explicitl
 ```bash
 python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
+python3 scripts/sync_sections.py --check
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
 python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --sections data/sections.json \

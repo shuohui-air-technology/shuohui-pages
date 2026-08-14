@@ -5,6 +5,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 
 DATE_MINUTE_RE = re.compile(r"^(date:\s*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})$")
@@ -19,6 +20,8 @@ STANDALONE_LABEL_RE = re.compile(
 )
 HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
 LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]\s+|\d+[.)、]\s+)\S")
+MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)")
+COVER_IMAGE_RE = re.compile(r"^\s*image:\s*(.+?)\s*$")
 
 
 def normalize_date_text(text: str) -> str:
@@ -127,6 +130,41 @@ def validate_front_matter(path: Path) -> list[str]:
         if not isinstance(parsed[field], bool):
             errors.append(f"{path}: {field}: expected boolean")
 
+    return errors
+
+
+def _asset_path(reference: str, path: Path, static_dir: Path) -> Path | None:
+    reference = reference.strip().strip("\"'")
+    if not reference or reference.startswith(("#", "//", "data:")):
+        return None
+    parsed = urlsplit(reference)
+    if parsed.scheme or parsed.netloc:
+        return None
+
+    reference_path = unquote(parsed.path)
+    if reference_path.startswith("/images/"):
+        return static_dir / reference_path.lstrip("/")
+    if reference_path.startswith("images/"):
+        return path.parent / reference_path
+    return None
+
+
+def validate_asset_references(path: Path, content_dir: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8")
+    static_dir = content_dir.parent / "static"
+    references = list(MARKDOWN_IMAGE_RE.findall(text))
+    front_matter = _front_matter_lines(text) or []
+    references.extend(
+        match.group(1).strip().strip("\"'")
+        for line in front_matter
+        if (match := COVER_IMAGE_RE.match(line))
+    )
+
+    errors: list[str] = []
+    for reference in references:
+        asset_path = _asset_path(reference, path, static_dir)
+        if asset_path is not None and not asset_path.is_file():
+            errors.append(f"asset missing: {reference}")
     return errors
 
 
@@ -297,6 +335,10 @@ def validate_files(content_dir: Path) -> list[str]:
                 f"{path}: markdown: {error}"
                 for error in validate_markdown_structure(path.read_text(encoding="utf-8"))
             )
+        errors.extend(
+            f"{path}: {error}"
+            for error in validate_asset_references(path, content_dir)
+        )
     return errors
 
 

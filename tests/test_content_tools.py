@@ -72,7 +72,7 @@ class ContentToolsTests(unittest.TestCase):
             path = Path(directory) / "draft.md"
             path.write_text(
                 "---\ntitle: Draft\ndate: 2026-06-09T10:24:00\n"
-                "draft: true\nmath: false\n---\ntext\n",
+                "draft: true\nmath: false\ncomments: true\n---\ntext\n",
                 encoding="utf-8",
             )
             self.assertEqual(validate_front_matter(path), [])
@@ -102,6 +102,27 @@ class ContentToolsTests(unittest.TestCase):
             self.assertTrue(any(error.endswith("draft: missing") for error in errors))
             self.assertTrue(any(error.endswith("math: missing") for error in errors))
             self.assertTrue(any(error.endswith("comments: missing") for error in errors))
+
+    def test_validate_files_rejects_missing_local_images(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            content_dir = root / "content"
+            static_images = root / "static" / "images"
+            content_dir.mkdir()
+            static_images.mkdir(parents=True)
+            article = content_dir / "article.md"
+            article.write_text(
+                "---\ntitle: Article\ndate: 2026-06-09T10:24:00\n"
+                "draft: false\nmath: false\ncomments: true\n"
+                "cover:\n  image: /images/missing-cover.png\n---\n"
+                "![Missing body image](/images/missing-body.png)\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_files(content_dir)
+
+            self.assertTrue(any("missing-cover.png" in error for error in errors))
+            self.assertTrue(any("missing-body.png" in error for error in errors))
 
     def test_validate_front_matter_reports_null_date_as_invalid(self):
         with tempfile.TemporaryDirectory() as directory:

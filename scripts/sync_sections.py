@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 
@@ -137,6 +138,31 @@ def sync_sections(repo_root: Path) -> None:
     )
 
 
+def check_generated_files(repo_root: Path) -> list[str]:
+    registry_path = repo_root / "data" / "sections.json"
+    sections = load_sections(registry_path)
+    content_root = repo_root / "content"
+    validate_sections(sections, content_root)
+
+    errors: list[str] = []
+    for section in sections:
+        slug = _require_string(section, "slug")
+        index_path = content_root / slug / "_index.md"
+        expected_index = render_section_index(section)
+        if index_path.read_text(encoding="utf-8") != expected_index:
+            errors.append(f"content/{slug}/_index.md: generated content drift")
+
+    template_path = repo_root / "static" / "admin" / "config.template.yml"
+    config_path = repo_root / "static" / "admin" / "config.yml"
+    expected_config = render_admin_config(
+        sections,
+        template_path.read_text(encoding="utf-8"),
+    )
+    if config_path.read_text(encoding="utf-8") != expected_config:
+        errors.append("static/admin/config.yml: generated content drift")
+    return errors
+
+
 def _section_location(section: dict[str, object], index: int) -> str:
     slug = section.get("slug")
     if isinstance(slug, str) and slug:
@@ -222,7 +248,22 @@ def main(argv: list[str] | None = None) -> int:
         default=Path.cwd(),
         help="repository root (defaults to the current working directory)",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="check generated section files without modifying the repository",
+    )
     args = parser.parse_args(argv)
+    if args.check:
+        try:
+            errors = check_generated_files(args.repo_root)
+        except (OSError, ValueError) as error:
+            print(f"Section consistency check failed: {error}", file=sys.stderr)
+            return 1
+        for error in errors:
+            print(error, file=sys.stderr)
+        return 1 if errors else 0
+
     sync_sections(args.repo_root)
     return 0
 

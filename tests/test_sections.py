@@ -12,6 +12,7 @@ load_sections = sync_sections_module.load_sections
 render_section_index = sync_sections_module.render_section_index
 sync_sections = sync_sections_module.sync_sections
 validate_sections = sync_sections_module.validate_sections
+check_generated_files = sync_sections_module.check_generated_files
 
 
 VALID_REGISTRY = {
@@ -326,6 +327,26 @@ class SectionRegistryTests(unittest.TestCase):
         repository_root = Path(__file__).resolve().parents[1]
         sync_sections(repository_root)
 
+    def test_check_generated_files_accepts_current_repository_layout(self):
+        repository_root = Path(__file__).resolve().parents[1]
+
+        self.assertEqual(check_generated_files(repository_root), [])
+
+    def test_check_generated_files_reports_registry_output_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_content_layout(root, ["math", "acgn"])
+            self._write_registry(root, VALID_REGISTRY)
+            self._write_admin_template(root)
+            sync_sections(root)
+            (root / "static" / "admin" / "config.yml").write_text(
+                "stale\n", encoding="utf-8"
+            )
+
+            errors = check_generated_files(root)
+
+            self.assertEqual(errors, ["static/admin/config.yml: generated content drift"])
+
     def test_ci_and_readme_sync_sections_before_validation_and_build(self):
         repository_root = Path(__file__).resolve().parents[1]
         workflow = (repository_root / ".github" / "workflows" / "hugo.yml").read_text(
@@ -335,6 +356,7 @@ class SectionRegistryTests(unittest.TestCase):
         command = "python3 scripts/sync_sections.py"
 
         self.assertIn(command, workflow)
+        self.assertIn("python3 scripts/sync_sections.py --check", workflow)
         self.assertIn("--sections data/sections.json", workflow)
         workflow_sync = workflow.index(command)
         self.assertLess(
