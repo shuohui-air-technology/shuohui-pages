@@ -25,6 +25,9 @@ jobs:
       - name: Bootstrap PaperMod theme
         run: python3 scripts/bootstrap_theme.py
 
+      - name: Sync section registry
+        run: python3 scripts/sync_sections.py
+
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:

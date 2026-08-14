@@ -253,6 +253,46 @@ class SectionRegistryTests(unittest.TestCase):
         repository_root = Path(__file__).resolve().parents[1]
         sync_sections(repository_root)
 
+    def test_ci_and_readme_sync_sections_before_validation_and_build(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        workflow = (repository_root / ".github" / "workflows" / "hugo.yml").read_text(
+            encoding="utf-8"
+        )
+        readme = (repository_root / "README.md").read_text(encoding="utf-8")
+        command = "python3 scripts/sync_sections.py"
+
+        self.assertIn(command, workflow)
+        workflow_sync = workflow.index(command)
+        self.assertLess(
+            workflow.index("python3 scripts/bootstrap_theme.py"),
+            workflow_sync,
+        )
+        self.assertLess(
+            workflow_sync,
+            workflow.index("python3 scripts/content_tools.py validate content"),
+        )
+        self.assertLess(workflow_sync, workflow.index("hugo --minify"))
+
+        normal_block_start = readme.index("```bash")
+        normal_block_end = readme.index("```", normal_block_start + len("```bash"))
+        normal_block = readme[normal_block_start:normal_block_end]
+        release_heading = readme.index("For a release-grade smoke check")
+        release_block_start = readme.index("```bash", release_heading)
+        release_block_end = readme.index("```", release_block_start + len("```bash"))
+        release_block = readme[release_block_start:release_block_end]
+
+        for block in (normal_block, release_block):
+            self.assertIn(command, block)
+            self.assertLess(block.index(command), block.index("hugo --minify"))
+
+        self.assertIn("data/sections.json", readme)
+        self.assertIn("single source of truth", readme)
+        self.assertIn("change `name` and `weight`", readme)
+        self.assertIn("keep existing `slug` values stable", readme)
+        self.assertIn("renaming or reordering a section", readme)
+        self.assertIn("invalid `slug`", readme)
+        self.assertIn("before deployment", readme)
+
     def _write_content_layout(self, repo_root: Path, section_slugs: list[str]) -> None:
         content_root = repo_root / "content"
         content_root.mkdir()
