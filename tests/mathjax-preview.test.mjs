@@ -20,6 +20,32 @@ function createScheduleSpy() {
   };
 }
 
+function createIdleScheduleSpy() {
+  const schedule = createScheduleSpy();
+  const idleCallbacks = [];
+  return {
+    schedule,
+    idleCallbacks,
+    config: {
+      set: schedule.schedule,
+      clear: schedule.clear,
+      idle(fn, options) {
+        idleCallbacks.push({ fn, options });
+        return fn;
+      },
+      cancelIdle() {}
+    }
+  };
+}
+
+async function runScheduledRender(schedule, idleCallbacks) {
+  await schedule.calls.at(-1).fn();
+  if (idleCallbacks) {
+    return idleCallbacks.at(-1).fn();
+  }
+  return schedule.calls.at(-1).fn();
+}
+
 test('getPreviewMode distinguishes missing, inline, and iframe previews', () => {
   assert.equal(preview.getPreviewMode(null), 'none');
   assert.equal(preview.getPreviewMode({ tagName: 'DIV' }), 'inline');
@@ -48,7 +74,8 @@ test('controller typesets inline preview content changes and idles on no-op poll
       return previewNode;
     }
   };
-  const scheduleSpy = createScheduleSpy();
+  const idleSchedule = createIdleScheduleSpy();
+  const scheduleSpy = idleSchedule.schedule;
   const typesetCalls = [];
   const controller = preview.createPreviewController({
     document,
@@ -58,14 +85,12 @@ test('controller typesets inline preview content changes and idles on no-op poll
         return Promise.resolve();
       }
     },
-    schedule: {
-      set: scheduleSpy.schedule,
-      clear: scheduleSpy.clear
-    },
+    schedule: idleSchedule.config,
     logger: { warn() {} }
   });
 
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.deepEqual(typesetCalls, [[previewNode]]);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
@@ -78,7 +103,8 @@ test('controller typesets inline preview content changes and idles on no-op poll
 
 test('controller returns missing-preview polling to idle after a rendered preview is removed', async () => {
   let previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
-  const scheduleSpy = createScheduleSpy();
+  const idleSchedule = createIdleScheduleSpy();
+  const scheduleSpy = idleSchedule.schedule;
   const typesetCalls = [];
   const controller = preview.createPreviewController({
     document: { querySelector() { return previewNode; } },
@@ -88,14 +114,12 @@ test('controller returns missing-preview polling to idle after a rendered previe
         return Promise.resolve();
       }
     },
-    schedule: {
-      set: scheduleSpy.schedule,
-      clear: scheduleSpy.clear
-    },
+    schedule: idleSchedule.config,
     logger: { warn() {} }
   });
 
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.deepEqual(typesetCalls, [[previewNode]]);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
@@ -111,6 +135,7 @@ test('controller returns missing-preview polling to idle after a rendered previe
 
   previewNode = { tagName: 'DIV', innerHTML: '<p>beta</p>' };
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.deepEqual(typesetCalls, [[{ tagName: 'DIV', innerHTML: '<p>alpha</p>' }], [previewNode]]);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
@@ -154,6 +179,8 @@ test('browser controller recovers when MathJax loads after startup', async () =>
   previewNode.innerHTML = '<p>beta</p>';
 
   await controller.poll();
+  await timers.at(-1).fn();
+  await timers.at(-1).fn();
 
   assert.deepEqual(typesetCalls, [[previewNode]]);
 });
@@ -166,7 +193,8 @@ test('controller retries existing inline content when MathJax becomes available 
       return previewNode;
     }
   };
-  const scheduleSpy = createScheduleSpy();
+  const idleSchedule = createIdleScheduleSpy();
+  const scheduleSpy = idleSchedule.schedule;
   const typesetCalls = [];
   let mathJax;
   const controller = preview.createPreviewController({
@@ -174,14 +202,12 @@ test('controller retries existing inline content when MathJax becomes available 
     getMathJax() {
       return mathJax;
     },
-    schedule: {
-      set: scheduleSpy.schedule,
-      clear: scheduleSpy.clear
-    },
+    schedule: idleSchedule.config,
     logger: { warn() {} }
   });
 
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.equal(typesetCalls.length, 0);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
@@ -194,6 +220,7 @@ test('controller retries existing inline content when MathJax becomes available 
   };
 
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.deepEqual(typesetCalls, [[previewNode]]);
 });
@@ -203,6 +230,8 @@ test('controller retries unchanged inline content after a transient typeset reje
   const document = { querySelector() { return previewNode; } };
   const warnings = [];
   let attempt = 0;
+  const idleSchedule = createIdleScheduleSpy();
+  const scheduleSpy = idleSchedule.schedule;
   const controller = preview.createPreviewController({
     document,
     mathJax: {
@@ -215,10 +244,7 @@ test('controller retries unchanged inline content after a transient typeset reje
         return Promise.resolve();
       }
     },
-    schedule: {
-      set(fn, delay) { return { fn, delay }; },
-      clear() {}
-    },
+    schedule: idleSchedule.config,
     logger: {
       warn(...args) {
         warnings.push(args);
@@ -227,7 +253,9 @@ test('controller retries unchanged inline content after a transient typeset reje
   });
 
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.equal(attempt, 2);
   assert.equal(warnings.length, 1);
@@ -237,7 +265,8 @@ test('controller retries unchanged inline content after a transient typeset reje
 test('controller coalesces rapid edits into one follow-up render while a render is pending', async () => {
   const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
   const document = { querySelector() { return previewNode; } };
-  const scheduleSpy = createScheduleSpy();
+  const idleSchedule = createIdleScheduleSpy();
+  const scheduleSpy = idleSchedule.schedule;
   let releaseFirstRender;
   let activeRenders = 0;
   let maxConcurrentRenders = 0;
@@ -261,29 +290,31 @@ test('controller coalesces rapid edits into one follow-up render while a render 
         return Promise.resolve();
       }
     },
-    schedule: {
-      set: scheduleSpy.schedule,
-      clear: scheduleSpy.clear
-    },
+    schedule: idleSchedule.config,
     logger: { warn() {} }
   });
 
-  const firstPoll = controller.poll();
+  await controller.poll();
+  await scheduleSpy.calls.at(-1).fn();
+  const firstRender = idleSchedule.idleCallbacks.at(-1).fn();
   await Promise.resolve();
 
   assert.deepEqual(renderedSnapshots, ['<p>alpha</p>']);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
 
   previewNode.innerHTML = '<p>beta</p>';
-  await scheduleSpy.calls.at(-1).fn();
+  await controller.poll();
   previewNode.innerHTML = '<p>gamma</p>';
+  await controller.poll();
   await scheduleSpy.calls.at(-1).fn();
+  await idleSchedule.idleCallbacks.at(-1).fn();
 
   assert.deepEqual(renderedSnapshots, ['<p>alpha</p>']);
   assert.equal(maxConcurrentRenders, 1);
 
   releaseFirstRender();
-  await firstPoll;
+  await firstRender;
+  await idleSchedule.idleCallbacks.at(-1).fn();
 
   assert.deepEqual(renderedSnapshots, ['<p>alpha</p>', '<p>gamma</p>']);
   assert.equal(maxConcurrentRenders, 1);
@@ -339,24 +370,24 @@ test('controller injects and typesets iframe previews, then reinjects for a repl
   };
 
   let current = iframeOne;
-  const scheduleSpy = createScheduleSpy();
+  const idleSchedule = createIdleScheduleSpy();
+  const scheduleSpy = idleSchedule.schedule;
   const controller = preview.createPreviewController({
     document: { querySelector() { return current; } },
     mathJax: {},
-    schedule: {
-      set: scheduleSpy.schedule,
-      clear: scheduleSpy.clear
-    },
+    schedule: idleSchedule.config,
     logger: { warn() {} }
   });
 
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.equal(iframeWindowOne.calls, 1);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
 
   current = iframeTwo;
   await controller.poll();
+  await runScheduledRender(scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.equal(iframeWindowTwo.calls, 1);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
@@ -417,5 +448,128 @@ test('stop clears the scheduled poll and prevents further typesetting work', asy
   await controller.poll();
 
   assert.equal(scheduleSpy.calls[0].cleared, true);
-  assert.deepEqual(typesetCalls, [[previewNode]]);
+  assert.equal(scheduleSpy.calls[1].cleared, true);
+  assert.deepEqual(typesetCalls, []);
+});
+
+test('debounces rapid edits into one final typeset', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: 'first' };
+  const debounce = createScheduleSpy();
+  const idleCallbacks = [];
+  const typesetCalls = [];
+  const controller = preview.createPreviewController({
+    document: { querySelector: () => previewNode },
+    mathJax: {
+      typesetPromise(nodes) {
+        typesetCalls.push(nodes);
+        return Promise.resolve();
+      }
+    },
+    schedule: {
+      set: debounce.schedule,
+      clear: debounce.clear,
+      idle(fn) {
+        idleCallbacks.push(fn);
+        return fn;
+      },
+      cancelIdle() {}
+    },
+    logger: { warn() {} }
+  });
+
+  await controller.poll();
+  previewNode.innerHTML = 'second';
+  await controller.poll();
+  previewNode.innerHTML = 'latest';
+  await controller.poll();
+
+  await debounce.calls.at(-1).fn();
+  await idleCallbacks.at(-1)();
+
+  assert.equal(typesetCalls.length, 1);
+  assert.deepEqual(typesetCalls[0], [previewNode]);
+});
+
+test('runs typesetting during idle time with a timeout fallback', async () => {
+  const idleCallbacks = [];
+  const schedule = createScheduleSpy();
+  const typesetCalls = [];
+  const controller = preview.createPreviewController({
+    document: { querySelector: () => ({ tagName: 'DIV', innerHTML: 'formula' }) },
+    mathJax: {
+      typesetPromise(nodes) {
+        typesetCalls.push(nodes);
+        return Promise.resolve();
+      }
+    },
+    schedule: {
+      set: schedule.schedule,
+      clear: schedule.clear,
+      idle(fn) {
+        idleCallbacks.push(fn);
+        return fn;
+      },
+      cancelIdle() {}
+    },
+    logger: { warn() {} }
+  });
+
+  await controller.poll();
+  await schedule.calls.at(-1).fn();
+
+  assert.equal(idleCallbacks.length, 1);
+  await idleCallbacks.at(-1)();
+  assert.equal(typesetCalls.length, 1);
+
+  const fallbackSchedule = createScheduleSpy();
+  const fallbackCalls = [];
+  const fallbackController = preview.createPreviewController({
+    document: { querySelector: () => ({ tagName: 'DIV', innerHTML: 'formula' }) },
+    mathJax: {
+      typesetPromise(nodes) {
+        fallbackCalls.push(nodes);
+        return Promise.resolve();
+      }
+    },
+    schedule: {
+      set: fallbackSchedule.schedule,
+      clear: fallbackSchedule.clear
+    },
+    logger: { warn() {} }
+  });
+
+  await fallbackController.poll();
+  await fallbackSchedule.calls.at(-1).fn();
+
+  assert.equal(fallbackSchedule.calls.at(-1).delay, 0);
+  await fallbackSchedule.calls.at(-1).fn();
+  assert.equal(fallbackCalls.length, 1);
+});
+
+test('does not repeat a successful unchanged large preview but retries a rejection', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: 'x'.repeat(100000) };
+  const idleSchedule = createIdleScheduleSpy();
+  const schedule = idleSchedule.schedule;
+  let attempts = 0;
+  const controller = preview.createPreviewController({
+    document: { querySelector: () => previewNode },
+    mathJax: {
+      typesetPromise() {
+        attempts += 1;
+        if (attempts === 1) return Promise.reject(new Error('temporary failure'));
+        return Promise.resolve();
+      }
+    },
+    schedule: idleSchedule.config,
+    logger: { warn() {} }
+  });
+
+  await controller.poll();
+  await runScheduledRender(schedule, idleSchedule.idleCallbacks);
+  await controller.poll();
+  await runScheduledRender(schedule, idleSchedule.idleCallbacks);
+  assert.equal(attempts, 2);
+
+  await controller.poll();
+  assert.equal(attempts, 2);
 });
