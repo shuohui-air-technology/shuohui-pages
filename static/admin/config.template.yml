@@ -1,0 +1,55 @@
+editor:
+  preview: true
+
+backend:
+  name: github
+  repo: shuohui-air-technology/shuohui-pages
+  branch: main
+  base_url: https://shuohui-cms-oauth.shuohui.workers.dev/
+  auth_endpoint: auth
+
+media_folder: "static/images"
+public_folder: "/images"
+
+collections:
+  - name: "pages"
+    label: "独立页面管理 (Pages)"
+    files:
+      - label: "博客主页 (Home)"
+        name: "home"
+        file: "content/_index.md"
+        fields:
+          - {label: "主页大标题", name: "title", widget: "string"}
+          - {label: "主页正文介绍", name: "body", widget: "markdown"}
+
+  - name: "sections"
+    label: "板块管理"
+    files:
+      - label: "板块列表"
+        name: "sections"
+        file: "data/sections.json"
+        fields:
+          - label: "板块"
+            name: "sections"
+            widget: "list"
+            summary: "{{fields.name}} ({{fields.slug}})"
+            fields:
+              - label: "板块名称"
+                name: "name"
+                widget: "string"
+              - label: "稳定 Slug（例如 travel）"
+                name: "slug"
+                widget: "string"
+                pattern:
+                  - "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  - "只能使用小写英文、数字和短横线"
+              - label: "导航排序数字"
+                name: "weight"
+                widget: "number"
+                value_type: "int"
+                min: 0
+              - label: "是否默认开启公式"
+                name: "math"
+                widget: "boolean"
+
+## ARTICLE_COLLECTIONS ##

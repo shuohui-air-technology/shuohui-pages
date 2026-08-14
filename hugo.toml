@@ -26,18 +26,6 @@ theme = "PaperMod"
     name = "email"
     url = "mailto:a0921652310@gmail.com"
 
-[menu]
-  [[menu.main]]
-    identifier = "math"
-    name = "学术推导与笔记"
-    url = "/math/"
-    weight = 10
-  [[menu.main]]
-    identifier = "acgn"
-    name = "二次元与随笔"
-    url = "/acgn/"
-    weight = 20
-
 [markup.goldmark.extensions]
   [markup.goldmark.extensions.passthrough]
     enable = true

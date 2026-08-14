@@ -22,6 +22,36 @@ collections:
           - {label: "主页大标题", name: "title", widget: "string"}
           - {label: "主页正文介绍", name: "body", widget: "markdown"}
 
+  - name: "sections"
+    label: "板块管理"
+    files:
+      - label: "板块列表"
+        name: "sections"
+        file: "data/sections.json"
+        fields:
+          - label: "板块"
+            name: "sections"
+            widget: "list"
+            summary: "{{fields.name}} ({{fields.slug}})"
+            fields:
+              - label: "板块名称"
+                name: "name"
+                widget: "string"
+              - label: "稳定 Slug（例如 travel）"
+                name: "slug"
+                widget: "string"
+                pattern:
+                  - "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  - "只能使用小写英文、数字和短横线"
+              - label: "导航排序数字"
+                name: "weight"
+                widget: "number"
+                value_type: "int"
+                min: 0
+              - label: "是否默认开启公式"
+                name: "math"
+                widget: "boolean"
+
   - name: "math"
     label: "学术推导与笔记"
     folder: "content/math"
@@ -44,7 +74,7 @@ collections:
       - {label: "正文内容", name: "body", widget: "markdown"}
 
   - name: "acgn"
-    label: "二次元与随笔"
+    label: "随笔"
     folder: "content/acgn"
     create: true
     fields:
@@ -63,3 +93,4 @@ collections:
           - {label: "图片替代文字(Alt)", name: "alt", widget: "string", required: false}
           - {label: "使用相对路径", name: "relative", widget: "boolean", default: true, required: false}
       - {label: "正文内容", name: "body", widget: "markdown"}
+

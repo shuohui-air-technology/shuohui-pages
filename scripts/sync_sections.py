@@ -6,6 +6,7 @@ from pathlib import Path
 
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+ARTICLE_COLLECTIONS_MARKER = "## ARTICLE_COLLECTIONS ##"
 
 
 def load_sections(path: Path) -> list[dict[str, object]]:
@@ -96,10 +97,34 @@ def render_section_index(section: dict[str, object]) -> str:
     )
 
 
+def render_admin_config(sections: list[dict[str, object]], template: str) -> str:
+    if ARTICLE_COLLECTIONS_MARKER not in template:
+        raise ValueError("admin config template is missing the article-collection marker")
+
+    collections = "\n".join(_render_article_collection(section) for section in sections)
+    return template.replace(ARTICLE_COLLECTIONS_MARKER, collections)
+
+
 def sync_sections(repo_root: Path) -> None:
     registry_path = repo_root / "data" / "sections.json"
     sections = load_sections(registry_path)
     validate_sections(sections, repo_root / "content")
+    content_root = repo_root / "content"
+
+    for section in sections:
+        slug = _require_string(section, "slug")
+        (content_root / slug / "_index.md").write_text(
+            render_section_index(section),
+            encoding="utf-8",
+        )
+
+    template_path = repo_root / "static" / "admin" / "config.template.yml"
+    template = template_path.read_text(encoding="utf-8")
+    rendered_config = render_admin_config(sections, template)
+    (repo_root / "static" / "admin" / "config.yml").write_text(
+        rendered_config,
+        encoding="utf-8",
+    )
 
 
 def _section_location(section: dict[str, object], index: int) -> str:
@@ -134,3 +159,42 @@ def _require_weight(section: dict[str, object]) -> int:
 
 def _yaml_quote(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
+
+
+def _render_article_collection(section: dict[str, object]) -> str:
+    slug = _require_string(section, "slug")
+    title = _yaml_quote(_require_string(section, "name"))
+    math_default = _yaml_bool(_require_math(section))
+    return (
+        f'  - name: "{slug}"\n'
+        f"    label: {title}\n"
+        f'    folder: "content/{slug}"\n'
+        "    create: true\n"
+        "    fields:\n"
+        '      - {label: "文章标题", name: "title", widget: "string"}\n'
+        '      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}\n'
+        f'      - {{label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: {math_default}}}\n'
+        '      - {label: "是否为草稿", name: "draft", widget: "boolean", default: false}\n'
+        '      - {label: "是否开启评论", name: "comments", widget: "boolean", default: true}\n'
+        '      - label: "文章封面 (Cover)"\n'
+        '        name: "cover"\n'
+        '        widget: "object"\n'
+        "        required: false\n"
+        "        collapsed: true\n"
+        "        fields:\n"
+        '          - {label: "上传图片", name: "image", widget: "image", required: false}\n'
+        '          - {label: "图片替代文字(Alt)", name: "alt", widget: "string", required: false}\n'
+        '          - {label: "使用相对路径", name: "relative", widget: "boolean", default: true, required: false}\n'
+        '      - {label: "正文内容", name: "body", widget: "markdown"}\n'
+    )
+
+
+def _require_math(section: dict[str, object]) -> bool:
+    value = section.get("math")
+    if not isinstance(value, bool):
+        raise ValueError(f"{_section_location(section, -1)}: math: expected boolean")
+    return value
+
+
+def _yaml_bool(value: bool) -> str:
+    return "true" if value else "false"
