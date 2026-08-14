@@ -89,12 +89,31 @@
     var rendered = { node: null, mode: 'none', snapshot: '' };
     var rendering = null;
     var queuedSnapshot = null;
+    var renderCompletion = null;
     var injectedIframe = null;
 
     function warn(error) {
       if (logger && typeof logger.warn === 'function') {
         logger.warn(LOG_PREFIX, error);
       }
+    }
+
+    function ensureRenderCompletion() {
+      if (renderCompletion) return renderCompletion.promise;
+
+      var resolve;
+      var promise = new Promise(function (complete) {
+        resolve = complete;
+      });
+      renderCompletion = { promise: promise, resolve: resolve };
+      return promise;
+    }
+
+    function resolveRenderCompletion(result) {
+      if (!renderCompletion) return;
+      var completion = renderCompletion;
+      renderCompletion = null;
+      completion.resolve(result);
     }
 
     function scheduleNext(changed) {
@@ -168,9 +187,27 @@
       queuedSnapshot = null;
       if (!stopped && next && next.mode !== 'none' && shouldTypeset(rendered, next)) {
         scheduleIdleRender();
+        return succeeded ? undefined : false;
       }
 
-      return succeeded;
+      if (!succeeded || stopped) {
+        resolveRenderCompletion(succeeded && !stopped ? undefined : false);
+        return succeeded ? undefined : false;
+      }
+
+      if (shouldTypeset(rendered, observed)) {
+        if (!debounceScheduled && !idleScheduled) scheduleDebouncedRender(false);
+        return undefined;
+      }
+
+      resolveRenderCompletion(undefined);
+
+      return undefined;
+    }
+
+    function failScheduledRender() {
+      resolveRenderCompletion(false);
+      return Promise.resolve(false);
     }
 
     function renderPreview(snapshot) {
@@ -181,18 +218,18 @@
 
         if (snapshot.mode === 'inline') {
           var mathJax = getMathJax();
-          if (!mathJax || typeof mathJax.typesetPromise !== 'function') return Promise.resolve(false);
+          if (!mathJax || typeof mathJax.typesetPromise !== 'function') return failScheduledRender();
           promise = mathJax.typesetPromise([snapshot.node]);
         } else if (snapshot.mode === 'iframe') {
           injectIframeMathJax(snapshot.node);
           var iframeWindow = snapshot.node && snapshot.node.contentWindow;
           if (!iframeWindow || !iframeWindow.MathJax || typeof iframeWindow.MathJax.typesetPromise !== 'function') {
-            return Promise.resolve(false);
+            return failScheduledRender();
           }
           promise = iframeWindow.MathJax.typesetPromise();
         }
 
-        if (!promise || typeof promise.then !== 'function') return Promise.resolve(false);
+        if (!promise || typeof promise.then !== 'function') return failScheduledRender();
 
         rendering = snapshot;
         return Promise.resolve(promise).then(function () {
@@ -204,7 +241,7 @@
       } catch (error) {
         warn(error);
         rendering = null;
-        return Promise.resolve(false);
+        return failScheduledRender();
       }
     }
 
@@ -249,10 +286,12 @@
           cancelIdle();
           queuedSnapshot = null;
           rendered = current;
+          resolveRenderCompletion(false);
         } else if (shouldTypeset(rendered, current)) {
+          var completion = ensureRenderCompletion();
           scheduleNext(true);
           scheduleDebouncedRender(changed);
-          return Promise.resolve(false);
+          return completion;
         }
 
         scheduleNext(changed);
@@ -271,6 +310,7 @@
       pollHandle = null;
       cancelDebounce();
       cancelIdle();
+      resolveRenderCompletion(false);
     }
 
     return {
