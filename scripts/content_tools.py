@@ -120,7 +120,11 @@ def validate_front_matter(path: Path) -> list[str]:
         errors.append(f"{path}: date: invalid")
 
     for field in ("draft", "math", "comments"):
-        if field in parsed and not isinstance(parsed[field], bool):
+        if field not in parsed:
+            if not is_section_index:
+                errors.append(f"{path}: {field}: missing")
+            continue
+        if not isinstance(parsed[field], bool):
             errors.append(f"{path}: {field}: expected boolean")
 
     return errors

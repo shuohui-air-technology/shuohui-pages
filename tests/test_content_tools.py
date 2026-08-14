@@ -89,6 +89,20 @@ class ContentToolsTests(unittest.TestCase):
             self.assertTrue(any("date" in error for error in errors))
             self.assertTrue(any("draft" in error for error in errors))
 
+    def test_validate_front_matter_requires_explicit_article_rendering_flags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "article.md"
+            path.write_text(
+                "---\ntitle: Article\ndate: 2026-06-09T10:24:00\n---\ntext\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_front_matter(path)
+
+            self.assertTrue(any(error.endswith("draft: missing") for error in errors))
+            self.assertTrue(any(error.endswith("math: missing") for error in errors))
+            self.assertTrue(any(error.endswith("comments: missing") for error in errors))
+
     def test_validate_front_matter_reports_null_date_as_invalid(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "null-date.md"
