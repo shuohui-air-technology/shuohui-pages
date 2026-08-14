@@ -32,7 +32,12 @@ def load_sections(path: Path) -> list[dict[str, object]]:
     return normalized
 
 
-def validate_sections(sections: list[dict[str, object]], content_root: Path) -> None:
+def validate_sections(
+    sections: list[dict[str, object]],
+    content_root: Path,
+    *,
+    allow_missing_registered_dirs: bool = False,
+) -> None:
     seen_slugs: set[str] = set()
     seen_names: set[str] = set()
 
@@ -76,7 +81,7 @@ def validate_sections(sections: list[dict[str, object]], content_root: Path) -> 
         )
 
     missing_dirs = sorted(expected_dirs - actual_dirs)
-    if missing_dirs:
+    if missing_dirs and not allow_missing_registered_dirs:
         missing_slug = missing_dirs[0]
         raise ValueError(
             f"content/{missing_slug}: missing section directory for registered slug"
@@ -108,12 +113,14 @@ def render_admin_config(sections: list[dict[str, object]], template: str) -> str
 def sync_sections(repo_root: Path) -> None:
     registry_path = repo_root / "data" / "sections.json"
     sections = load_sections(registry_path)
-    validate_sections(sections, repo_root / "content")
     content_root = repo_root / "content"
+    validate_sections(sections, content_root, allow_missing_registered_dirs=True)
 
     for section in sections:
         slug = _require_string(section, "slug")
-        (content_root / slug / "_index.md").write_text(
+        section_root = content_root / slug
+        section_root.mkdir(parents=True, exist_ok=True)
+        (section_root / "_index.md").write_text(
             render_section_index(section),
             encoding="utf-8",
         )

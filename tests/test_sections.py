@@ -154,7 +154,12 @@ class SectionRegistryTests(unittest.TestCase):
     def test_sync_sections_generates_indexes_and_admin_config_from_registry(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            self._write_content_layout(root, ["math", "acgn", "travel"])
+            self._write_content_layout(root, ["math", "acgn"])
+            existing_article = root / "content" / "acgn" / "existing-entry.md"
+            existing_article.write_text(
+                "---\ntitle: \"Existing\"\n---\nBody stays put.\n",
+                encoding="utf-8",
+            )
             self._write_registry(
                 root,
                 {
@@ -166,6 +171,14 @@ class SectionRegistryTests(unittest.TestCase):
                 },
             )
             self._write_admin_template(root)
+
+            sync_sections(root)
+            first_config = (root / "static" / "admin" / "config.yml").read_text(
+                encoding="utf-8"
+            )
+            first_travel_index = (root / "content" / "travel" / "_index.md").read_text(
+                encoding="utf-8"
+            )
 
             sync_sections(root)
 
@@ -187,10 +200,29 @@ class SectionRegistryTests(unittest.TestCase):
                 "weight: 20",
                 (root / "content" / "acgn" / "_index.md").read_text(encoding="utf-8"),
             )
-            self.assertTrue((root / "content" / "travel" / "_index.md").exists())
+            self.assertTrue((root / "content" / "travel").is_dir())
+            self.assertEqual(
+                (root / "content" / "travel" / "_index.md").read_text(encoding="utf-8"),
+                '---\n'
+                'title: "旅行"\n'
+                "menu:\n"
+                "  main:\n"
+                '    name: "旅行"\n'
+                "    weight: 30\n"
+                "---\n",
+            )
+            self.assertEqual(
+                existing_article.read_text(encoding="utf-8"),
+                "---\ntitle: \"Existing\"\n---\nBody stays put.\n",
+            )
 
             generated_config = (root / "static" / "admin" / "config.yml").read_text(
                 encoding="utf-8"
+            )
+            self.assertEqual(generated_config, first_config)
+            self.assertEqual(
+                (root / "content" / "travel" / "_index.md").read_text(encoding="utf-8"),
+                first_travel_index,
             )
             self.assertIn('name: "travel"', generated_config)
             self.assertIn('folder: "content/travel"', generated_config)
@@ -201,6 +233,21 @@ class SectionRegistryTests(unittest.TestCase):
             self.assertIn('name: "comments"', generated_config)
             self.assertIn('name: "cover"', generated_config)
             self.assertIn('name: "body"', generated_config)
+
+    def test_validate_sections_keeps_orphan_guard_when_registered_slug_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_content_layout(root, ["math", "acgn"])
+            sections = [
+                {"name": "学术推导与笔记", "slug": "math-notes", "weight": 10, "math": True},
+                {"name": "随笔", "slug": "acgn", "weight": 20, "math": False},
+            ]
+
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^content/math: existing section directory is not registered$",
+            ):
+                validate_sections(sections, root / "content")
 
     def test_sync_sections_accepts_current_repository_layout(self):
         repository_root = Path(__file__).resolve().parents[1]
