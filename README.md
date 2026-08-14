@@ -41,14 +41,15 @@ python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --required acgn/index.html \
   --required math/index.html \
   --required sitemap.xml \
-  --required 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
+  --required 'acgn/2026-06-07-atri/index.html' \
+  --forbidden 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
 ```
 
 After the smoke check, confirm that:
 
-- the published article exists at `acgn/我们终将走向悲伤-解构主义之殇/index.html`
-- intentionally drafted fixtures do not appear in the generated output
-- `sitemap.xml` includes the published article URL
+- the published fixture exists at `acgn/2026-06-07-atri/index.html`
+- the intentional draft does not appear at `acgn/我们终将走向悲伤-解构主义之殇/index.html`
+- `sitemap.xml` includes the published fixture URL and excludes the draft URL
 
 ## Content and deployment expectations
 

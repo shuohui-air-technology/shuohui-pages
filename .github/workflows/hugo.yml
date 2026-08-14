@@ -49,7 +49,8 @@ jobs:
             --required acgn/index.html \
             --required math/index.html \
             --required sitemap.xml \
-            --required 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
+            --required 'acgn/2026-06-07-atri/index.html' \
+            --forbidden 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

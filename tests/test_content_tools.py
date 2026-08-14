@@ -100,12 +100,11 @@ class ContentToolsTests(unittest.TestCase):
             self.assertIn("10:24:00", index_path.read_text(encoding="utf-8"))
             self.assertEqual(validate_files(content_dir), [])
 
-    def test_identified_latest_acgn_article_is_published(self):
-        repository_root = Path(__file__).resolve().parents[1]
-        article = repository_root / "content/acgn/我们终将走向悲伤-解构主义之殇.md"
-        self.assertIs(
-            parse_front_matter(article.read_text(encoding="utf-8"))["draft"], False
+    def test_parse_front_matter_preserves_intentional_draft(self):
+        parsed = parse_front_matter(
+            "---\ntitle: Draft\ndraft: true\nmath: false\n---\n"
         )
+        self.assertIs(parsed["draft"], True)
 
 
 if __name__ == "__main__":
