@@ -48,9 +48,11 @@ jobs:
             --sections data/sections.json \
             --required acgn/index.html \
             --required math/index.html \
-            --required sitemap.xml \
-            --required 'acgn/2026-06-07-atri/index.html' \
-            --forbidden 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
+            --required sitemap.xml
+          hugo list all > /tmp/shuohui-hugo-list.csv
+          python3 scripts/check_content_outputs.py \
+            --public public \
+            --hugo-list /tmp/shuohui-hugo-list.csv
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -40,16 +40,18 @@ python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --sections data/sections.json \
   --required acgn/index.html \
   --required math/index.html \
-  --required sitemap.xml \
-  --required 'acgn/2026-06-07-atri/index.html' \
-  --forbidden 'acgn/我们终将走向悲伤-解构主义之殇/index.html'
+  --required sitemap.xml
+hugo list all > /tmp/shuohui-hugo-list.csv
+python3 scripts/check_content_outputs.py \
+  --public /tmp/shuohui-final-public \
+  --hugo-list /tmp/shuohui-hugo-list.csv
 ```
 
 After the smoke check, confirm that:
 
-- the published fixture exists at `acgn/2026-06-07-atri/index.html`
-- the intentional draft does not appear at `acgn/我们终将走向悲伤-解构主义之殇/index.html`
-- `sitemap.xml` includes the published fixture URL and excludes the draft URL
+- every Hugo page with `draft: false` has a generated HTML output
+- every Hugo page with `draft: true` is absent from the generated output
+- `sitemap.xml` follows the same published/draft split
 
 ## Content and deployment expectations
 
