@@ -59,6 +59,7 @@ After the smoke check, confirm that:
 - 保存并发布（Save and Publish）：提交到 `main` 并触发当前 GitHub Actions，按正常流程部署。
 - `draft: true`：Hugo 构建时不会生成公开页面。要公开文章，必须取消“是否为草稿”，再选择“保存并发布”；当前验证工具不会静默覆盖作者的发布意图。
 - 未发布保存仍然会提交到仓库；如果之后发生一次未跳过 CI 的部署，这些提交可能一起发布，因此需要长期隐藏的文章必须保留 `draft: true`。
+- 非数学文章的 Markdown 结构会在部署前校验：明显缺少段落空行、未规范的有序列表标记、以及没有分隔的独立标签会阻止发布，并给出具体行号。
 - The local validation and build commands in this README do not push, deploy the Worker, or publish GitHub Pages; any of those actions require explicit user confirmation.
 - GitHub Pages deployment is expected to run the normalize, validate, Hugo build, and generated-output smoke checks before uploading `public/`.
 - The Cloudflare Worker should be validated with `node --test cloudflare-gateway/index.test.js` before any separate Worker deployment.

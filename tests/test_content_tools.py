@@ -7,6 +7,7 @@ from scripts.content_tools import (
     normalize_files,
     normalize_date_text,
     parse_front_matter,
+    validate_markdown_structure,
     validate_front_matter,
     validate_files,
 )
@@ -62,6 +63,21 @@ class ContentToolsTests(unittest.TestCase):
             errors = validate_front_matter(path)
             self.assertTrue(any("date: invalid" in error for error in errors))
             self.assertFalse(any("date: missing" in error for error in errors))
+
+    def test_validate_markdown_structure_flags_unformatted_boundaries(self):
+        source = (
+            "---\ntitle: Example\ndate: 2026-08-14T10:00:00\n---\n\n"
+            "1.Agent\n"
+            "这是一个用于说明段落分隔问题的较长文本，后面本应是一个新的段落。\n"
+            "优点：\n"
+            "这是优点内容。\n"
+        )
+
+        errors = validate_markdown_structure(source)
+
+        self.assertTrue(any("ordered list marker" in error for error in errors))
+        self.assertTrue(any("standalone label" in error for error in errors))
+        self.assertTrue(any("paragraph boundary" in error for error in errors))
 
     def test_validate_front_matter_allows_section_index_without_date(self):
         with tempfile.TemporaryDirectory() as directory:

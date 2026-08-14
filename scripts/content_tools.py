@@ -12,6 +12,8 @@ DATE_SECOND_RE = re.compile(r"^(date:\s*)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})$"
 FRONT_MATTER_DATE_RE = re.compile(
     r"^date:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})$"
 )
+ORDERED_MARKER_RE = re.compile(r"^\s*\d+[.)、](?=\S)")
+STANDALONE_LABEL_RE = re.compile(r"^\s*(?![#>*`-])[^\s].{0,38}[：:]\s*$")
 
 
 def normalize_date_text(text: str) -> str:
@@ -119,6 +121,59 @@ def validate_front_matter(path: Path) -> list[str]:
     return errors
 
 
+def validate_markdown_structure(text: str) -> list[str]:
+    lines = text.splitlines()
+    closing_index = None
+    if lines and lines[0].strip() == "---":
+        for index, line in enumerate(lines[1:], start=1):
+            if line.strip() == "---":
+                closing_index = index
+                break
+    if closing_index is None:
+        return []
+
+    errors: list[str] = []
+    body = [
+        (index + 1, lines[index])
+        for index in range(closing_index + 1, len(lines))
+    ]
+    for position, (line_number, line) in enumerate(body):
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if ORDERED_MARKER_RE.match(stripped):
+            errors.append(
+                f"line {line_number}: ordered list marker must be followed by a space"
+            )
+
+        next_line = body[position + 1][1].strip() if position + 1 < len(body) else ""
+        if next_line and STANDALONE_LABEL_RE.match(stripped):
+            errors.append(
+                f"line {line_number}: standalone label should be a Markdown heading "
+                "or be followed by a blank line"
+            )
+
+        if next_line and _looks_like_paragraph_boundary(stripped, next_line):
+            errors.append(
+                f"line {line_number}: likely paragraph boundary needs a blank line"
+            )
+
+    return errors
+
+
+def _looks_like_paragraph_boundary(current: str, following: str) -> bool:
+    if len(current) > 48 or len(following) < 30:
+        return False
+    if current.startswith(("#", ">", "-", "*", "```", "$$", "![")):
+        return False
+    if ORDERED_MARKER_RE.match(current):
+        return True
+    if current.endswith(("。", "！", "？", "!", "?", "；", ";", "：", ":")):
+        return False
+    return True
+
+
 def iter_markdown_files(content_dir: Path):
     yield from sorted(path for path in content_dir.rglob("*.md") if path.is_file())
 
@@ -138,6 +193,11 @@ def validate_files(content_dir: Path) -> list[str]:
     errors: list[str] = []
     for path in iter_markdown_files(content_dir):
         errors.extend(validate_front_matter(path))
+        if path.parent.name != "math":
+            errors.extend(
+                f"{path}: markdown: {error}"
+                for error in validate_markdown_structure(path.read_text(encoding="utf-8"))
+            )
     return errors
 
 
