@@ -26,26 +26,64 @@
     return backslashCount % 2 === 1;
   }
 
+  function hasStrongMathSyntax(body) {
+    return /\\[A-Za-z]+|[{}^_=<>()[\]]/.test(body)
+      || /\S\s*[+\-*/]\s*\S/.test(body)
+      || /(?:\d\s*[A-Za-z]|[A-Za-z]\s*\d)/.test(body);
+  }
+
+  function isCurrencyBridgeBody(body) {
+    var match = /^(?:\d+(?:[.,]\d+)?|\.\d+)([\s\S]*)$/.exec(body.trim());
+    if (!match) return false;
+
+    var tail = match[1].trim();
+    if (!tail) return true;
+    if (/^(?:USD|EUR|GBP|美元|美金|元)(?:[\s…~～\-–—/.,;:]*)$/i.test(tail)) {
+      return true;
+    }
+    if (/[\u3400-\u9fff，。！？；：、…]/.test(tail)) {
+      return !hasStrongMathSyntax(body);
+    }
+    return /^[\s~～\-–—/.,;:]+$/.test(tail);
+  }
+
   function findInlineDollarPositions(source) {
     var positions = [];
     for (var index = 0; index < source.length; index += 1) {
       if (source.charAt(index) !== '$') continue;
-      if (source.charAt(index - 1) === '$' || source.charAt(index + 1) === '$') continue;
       if (isEscapedDollar(source, index)) continue;
       positions.push(index);
     }
     return positions;
   }
 
+  function isLikelyInlineMath(source, openingIndex, closingIndex) {
+    var body = source.slice(openingIndex + 1, closingIndex);
+    if (!body.trim() || body.indexOf('\n') !== -1) return false;
+
+    var openingIsCurrency = isCurrencyLikeDollar(source, openingIndex);
+    var closingIsCurrency = isCurrencyLikeDollar(source, closingIndex);
+    var strongMath = hasStrongMathSyntax(body);
+    var currencyBridge = isCurrencyBridgeBody(body);
+
+    if (strongMath && !currencyBridge) return true;
+    if (openingIsCurrency && closingIsCurrency) return false;
+    if (openingIsCurrency && currencyBridge) return false;
+    return true;
+  }
+
   function containsInlineDollarMath(source) {
     var positions = findInlineDollarPositions(source);
-    for (var index = 0; index < positions.length - 1; index += 1) {
+    for (var index = 0; index < positions.length - 1;) {
       var openingIndex = positions[index];
       var closingIndex = positions[index + 1];
-      var body = source.slice(openingIndex + 1, closingIndex);
-      if (!body || body.indexOf('\n') !== -1) continue;
-      if (!isCurrencyLikeDollar(source, openingIndex)
-          || !isCurrencyLikeDollar(source, closingIndex)) return true;
+      if (isLikelyInlineMath(source, openingIndex, closingIndex)) return true;
+
+      var isCurrencyPair = isCurrencyLikeDollar(source, openingIndex)
+        && isCurrencyLikeDollar(source, closingIndex);
+      var nextCanOpenMath = index + 2 < positions.length
+        && isLikelyInlineMath(source, closingIndex, positions[index + 2]);
+      index += isCurrencyPair && !nextCanOpenMath ? 2 : 1;
     }
 
     return false;

@@ -37,8 +37,19 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $2 + x$。'), true);
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $2-x$。'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2+x$100 次'), true);
+  assert.equal(loader.containsRenderableMath('公式 $x$$100美元'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2x$$100USD'), true);
   assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
+  assert.equal(
+    loader.containsRenderableMath('价格从 $100 到 $80，残缺公式 $x'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('价格从 $100 到 $80，末尾孤立 $'),
+    false
+  );
 });
 
 function createRuntimeFixture(ready = false) {
