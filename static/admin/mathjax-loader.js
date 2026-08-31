@@ -48,13 +48,21 @@
     if (/\b(?:to|each|per|and|or|through|thru|versus|vs|dollars?|bucks?)\b/i.test(tail)) {
       return !hasExplicitMathSyntax(body);
     }
-    if (/[\s,.;:!?]+[A-Za-z]{2,}\b/.test(tail)) {
-      return !hasExplicitMathSyntax(body);
-    }
     if (/[\u3400-\u9fff，。！？；：、…]/.test(tail)) {
       return !hasStrongMathSyntax(body);
     }
     return /^[\s~～\-–—/.,;:]+$/.test(tail);
+  }
+
+  function isConfirmedCurrencyPair(source, openingIndex, closingIndex) {
+    return isCurrencyLikeDollar(source, openingIndex)
+      && isCurrencyLikeDollar(source, closingIndex)
+      && isCurrencyBridgeBody(source.slice(openingIndex + 1, closingIndex));
+  }
+
+  function hasOrphanLikeClosingBoundary(source, closingIndex) {
+    return /\s/.test(source.charAt(closingIndex - 1))
+      || /[A-Za-z0-9_\u3400-\u9fff]/.test(source.charAt(closingIndex + 1));
   }
 
   function findInlineDollarPositions(source) {
@@ -91,8 +99,22 @@
 
       var isCurrencyPair = isCurrencyLikeDollar(source, openingIndex)
         && isCurrencyLikeDollar(source, closingIndex);
-      var nextCanOpenMath = index + 2 < positions.length
-        && isLikelyInlineMath(source, closingIndex, positions[index + 2]);
+      var hasNextCandidate = index + 2 < positions.length;
+      var nextClosingIndex = hasNextCandidate ? positions[index + 2] : -1;
+      var nextCanOpenMath = hasNextCandidate
+        && isLikelyInlineMath(source, closingIndex, nextClosingIndex);
+      if (
+        nextCanOpenMath
+        && isConfirmedCurrencyPair(source, openingIndex, closingIndex)
+      ) {
+        var nextBody = source.slice(closingIndex + 1, nextClosingIndex);
+        if (
+          !hasExplicitMathSyntax(nextBody)
+          && hasOrphanLikeClosingBoundary(source, nextClosingIndex)
+        ) {
+          nextCanOpenMath = false;
+        }
+      }
       index += isCurrencyPair && !nextCanOpenMath ? 2 : 1;
     }
 
