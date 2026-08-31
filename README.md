@@ -14,14 +14,14 @@ The shared bootstrap script obtains PaperMod locally in `themes/PaperMod` during
 Run these commands from the repository root:
 
 ```bash
-python3 -m unittest discover -s tests -v
 python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
 python3 scripts/sync_sections.py --check
 python3 scripts/content_tools.py normalize content
 python3 scripts/content_tools.py validate content
-hugo --minify --gc --buildFuture --destination /tmp/shuohui-public
+python3 -m unittest discover -s tests -v
 node --test tests/mathjax-config.test.mjs tests/mathjax-loader.test.mjs tests/mathjax-preview.test.mjs tests/markdown-format.test.mjs cloudflare-gateway/index.test.js
+hugo --minify --gc --buildFuture --destination /tmp/shuohui-public
 ```
 
 `data/sections.json` is the single source of truth for section names, order, and
@@ -44,6 +44,10 @@ For a release-grade smoke check, build and verify the generated output explicitl
 python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
 python3 scripts/sync_sections.py --check
+python3 scripts/content_tools.py normalize content
+python3 scripts/content_tools.py validate content
+python3 -m unittest discover -s tests -v
+node --test tests/mathjax-config.test.mjs tests/mathjax-loader.test.mjs tests/mathjax-preview.test.mjs tests/markdown-format.test.mjs cloudflare-gateway/index.test.js
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
 hugo list all > /tmp/shuohui-hugo-list.csv
 python3 scripts/check_build.py --public /tmp/shuohui-final-public \

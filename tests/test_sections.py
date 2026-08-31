@@ -415,6 +415,10 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertLess(
             workflow.index(node_test_command), workflow.index("hugo --minify")
         )
+        self.assertLess(
+            workflow.index("python3 scripts/content_tools.py normalize content"),
+            workflow.index(python_test_command),
+        )
         self.assertLess(workflow_sync, workflow.index("hugo --minify"))
 
         normal_block_start = readme.index("```bash")
@@ -435,6 +439,16 @@ class SectionRegistryTests(unittest.TestCase):
         for block in (normal_block, release_block):
             self.assertIn(command, block)
             self.assertLess(block.index(command), block.index("hugo --minify"))
+            self.assertLess(
+                block.index("python3 scripts/content_tools.py normalize content"),
+                block.index(python_test_command),
+            )
+            self.assertLess(
+                block.index(python_test_command), block.index("hugo --minify")
+            )
+            self.assertLess(
+                block.index(node_test_command), block.index("hugo --minify")
+            )
 
         self.assertIn("data/sections.json", readme)
         self.assertIn("--sections data/sections.json", release_block)
