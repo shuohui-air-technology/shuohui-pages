@@ -95,9 +95,11 @@ def validate_sections(
 def render_section_index(section: dict[str, object]) -> str:
     title = _yaml_quote(_require_string(section, "name"))
     weight = _require_weight(section)
+    math_default = _yaml_bool(_require_math(section))
     return (
         "---\n"
         f"title: {title}\n"
+        f"math: {math_default}\n"
         "menu:\n"
         "  main:\n"
         f"    name: {title}\n"

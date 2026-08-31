@@ -193,11 +193,29 @@ class SectionRegistryTests(unittest.TestCase):
             rendered,
             '---\n'
             'title: "随笔"\n'
+            "math: false\n"
             "menu:\n"
             "  main:\n"
             '    name: "随笔"\n'
             "    weight: 20\n"
             "---\n",
+        )
+
+    def test_render_section_index_propagates_math_rendering_default(self):
+        rendered = render_section_index(
+            {"name": "学术推导与笔记", "slug": "math", "weight": 10, "math": True}
+        )
+
+        self.assertEqual(
+            rendered,
+            '---\n'
+            'title: "学术推导与笔记"\n'
+            'math: true\n'
+            'menu:\n'
+            '  main:\n'
+            '    name: "学术推导与笔记"\n'
+            '    weight: 10\n'
+            '---\n',
         )
 
     def test_render_admin_config_generates_section_collections_from_registry(self):
@@ -260,11 +278,16 @@ class SectionRegistryTests(unittest.TestCase):
                 (root / "content" / "acgn" / "_index.md").read_text(encoding="utf-8"),
                 '---\n'
                 'title: "随笔"\n'
+                "math: false\n"
                 "menu:\n"
                 "  main:\n"
                 '    name: "随笔"\n'
                 "    weight: 20\n"
                 "---\n",
+            )
+            self.assertIn(
+                "math: true",
+                (root / "content" / "math" / "_index.md").read_text(encoding="utf-8"),
             )
             self.assertIn(
                 'title: "随笔"',
@@ -279,6 +302,7 @@ class SectionRegistryTests(unittest.TestCase):
                 (root / "content" / "travel" / "_index.md").read_text(encoding="utf-8"),
                 '---\n'
                 'title: "旅行"\n'
+                "math: false\n"
                 "menu:\n"
                 "  main:\n"
                 '    name: "旅行"\n'
