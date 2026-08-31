@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const preview = require('../static/admin/mathjax-preview.js');
+const mathJaxLoader = require('../static/admin/mathjax-loader.js');
 
 function createScheduleSpy() {
   const calls = [];
@@ -70,6 +71,102 @@ test('shouldTypeset detects node, mode, and content changes', () => {
   assert.equal(preview.shouldTypeset(same, { ...same, snapshot: 'b' }), true);
   assert.equal(preview.shouldTypeset(same, { ...same, mode: 'iframe' }), true);
   assert.equal(preview.shouldTypeset(same, { ...same, node: {} }), true);
+});
+
+test('plain preview changes settle without loading or typesetting MathJax', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>plain text</p>' };
+  const idleSchedule = createIdleScheduleSpy();
+  let loaderCalls = 0;
+  let typesetCalls = 0;
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return previewNode; } },
+    containsRenderableMath() { return false; },
+    ensureMathJax() { loaderCalls += 1; return Promise.resolve(null); },
+    mathJax: {
+      typesetPromise() { typesetCalls += 1; return Promise.resolve(); }
+    },
+    schedule: idleSchedule.config,
+    logger: { warn() {} }
+  });
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  await controller.poll();
+  assert.equal(loaderCalls, 0);
+  assert.equal(typesetCalls, 0);
+  assert.equal(idleSchedule.schedule.calls.at(-1).delay, 2000);
+});
+
+test('math preview loads once and typesets only the latest debounced snapshot', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>$a$</p>' };
+  const idleSchedule = createIdleScheduleSpy();
+  const renderedSnapshots = [];
+  let loaderCalls = 0;
+  let readyMathJax = null;
+  const loadedMathJax = {
+    typesetPromise(nodes) {
+      renderedSnapshots.push(nodes[0].innerHTML);
+      return Promise.resolve();
+    }
+  };
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return previewNode; } },
+    containsRenderableMath(source) { return source.includes('$'); },
+    ensureMathJax() {
+      loaderCalls += 1;
+      readyMathJax = loadedMathJax;
+      return Promise.resolve(loadedMathJax);
+    },
+    getMathJax() { return readyMathJax; },
+    schedule: idleSchedule.config,
+    logger: { warn() {} }
+  });
+
+  const firstPoll = controller.poll();
+  previewNode.innerHTML = '<p>$b$</p>';
+  assert.equal(controller.poll(), firstPoll);
+  previewNode.innerHTML = '<p>$c$</p>';
+  assert.equal(controller.poll(), firstPoll);
+  await idleSchedule.schedule.calls.at(-1).fn();
+  await idleSchedule.idleCallbacks.at(-1).fn();
+  await firstPoll;
+
+  assert.equal(loaderCalls, 1);
+  assert.deepEqual(renderedSnapshots, ['<p>$c$</p>']);
+});
+
+test('plain iframe preview does not inject MathJax scripts', async () => {
+  const appended = [];
+  const iframe = {
+    tagName: 'IFRAME',
+    contentDocument: {
+      head: {
+        ownerDocument: {
+          createElement(tag) { return { tagName: tag.toUpperCase() }; }
+        },
+        appendChild(node) { appended.push(node); return node; }
+      },
+      body: { innerHTML: '<p>plain text</p>' }
+    },
+    contentWindow: {}
+  };
+  const idleSchedule = createIdleScheduleSpy();
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return iframe; } },
+    containsRenderableMath() { return false; },
+    schedule: idleSchedule.config,
+    logger: { warn() {} }
+  });
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.deepEqual(appended, []);
 });
 
 test('controller typesets inline preview content changes and idles on no-op polls', async () => {
@@ -180,12 +277,28 @@ test('controller returns missing-preview polling to idle after a rendered previe
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
 });
 
-test('browser controller recovers when MathJax loads after startup', async () => {
-  const previewNode = { tagName: 'DIV', innerHTML: '<p>alpha</p>' };
+test('browser controller detects math and loads the shared host runtime', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>$alpha$</p>' };
   const timers = [];
+  const appended = [];
+  const head = {
+    appendChild(node) {
+      node.parentNode = head;
+      appended.push(node);
+      return node;
+    },
+    removeChild(node) {
+      node.parentNode = null;
+      return node;
+    }
+  };
   const hostWindow = {
-    MathJax: undefined,
+    MathJax: {},
     document: {
+      head,
+      createElement(tagName) {
+        return { tagName: tagName.toUpperCase(), async: false, src: '' };
+      },
       querySelector(selector) {
         assert.equal(selector, '[role="document"]');
         return previewNode;
@@ -203,10 +316,14 @@ test('browser controller recovers when MathJax loads after startup', async () =>
   };
 
   const controller = preview.startBrowserController(hostWindow);
+  assert.equal(timers.length, 2);
+  assert.equal(timers[1].delay, 500);
+  await timers[1].fn();
+  assert.equal(timers.at(-1).delay, 0);
+  const renderPromise = timers.at(-1).fn();
 
-  await Promise.resolve();
-
-  assert.equal(timers.at(-1).delay, 500);
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].src, mathJaxLoader.MATHJAX_RUNTIME_URL);
 
   const typesetCalls = [];
   hostWindow.MathJax = {
@@ -215,14 +332,11 @@ test('browser controller recovers when MathJax loads after startup', async () =>
       return Promise.resolve();
     }
   };
-  previewNode.innerHTML = '<p>beta</p>';
-
-  const pollPromise = controller.poll();
-  await timers.at(-1).fn();
-  await timers.at(-1).fn();
-  await pollPromise;
+  appended[0].onload();
+  await renderPromise;
 
   assert.deepEqual(typesetCalls, [[previewNode]]);
+  controller.stop();
 });
 
 test('controller retries existing inline content when MathJax becomes available without content changes', async () => {
@@ -261,6 +375,56 @@ test('controller retries existing inline content when MathJax becomes available 
   await runScheduledPoll(controller, scheduleSpy, idleSchedule.idleCallbacks);
 
   assert.deepEqual(typesetCalls, [[previewNode]]);
+});
+
+test('controller warns and retries unchanged inline math after runtime loading fails', async () => {
+  const previewNode = { tagName: 'DIV', innerHTML: '<p>$x$</p>' };
+  const idleSchedule = createIdleScheduleSpy();
+  const warnings = [];
+  let loaderAttempts = 0;
+  let readyMathJax = null;
+  let typesetCalls = 0;
+  const loadedMathJax = {
+    typesetPromise() {
+      typesetCalls += 1;
+      return Promise.resolve();
+    }
+  };
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return previewNode; } },
+    containsRenderableMath() { return true; },
+    ensureMathJax() {
+      loaderAttempts += 1;
+      if (loaderAttempts === 1) {
+        return Promise.reject(new Error('offline'));
+      }
+      readyMathJax = loadedMathJax;
+      return Promise.resolve(loadedMathJax);
+    },
+    getMathJax() { return readyMathJax; },
+    schedule: idleSchedule.config,
+    logger: {
+      warn(...args) {
+        warnings.push(args);
+      }
+    }
+  });
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+
+  assert.equal(loaderAttempts, 2);
+  assert.equal(typesetCalls, 1);
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0][0], '[Shuohui CMS MathJax]');
 });
 
 test('controller retries unchanged inline content after a transient typeset rejection', async () => {
@@ -433,6 +597,77 @@ test('controller injects and typesets iframe previews, then reinjects for a repl
 
   assert.equal(iframeWindowTwo.calls, 1);
   assert.equal(scheduleSpy.calls.at(-1).delay, 500);
+});
+
+test('controller retries iframe runtime injection after a network failure', async () => {
+  const appended = [];
+  const warnings = [];
+  const iframeWindow = {};
+  const head = {
+    ownerDocument: {
+      createElement(tag) {
+        return { tagName: tag.toUpperCase() };
+      }
+    },
+    appendChild(node) {
+      appended.push(node);
+      return node;
+    }
+  };
+  const iframe = {
+    tagName: 'IFRAME',
+    contentDocument: { head, body: { innerHTML: '<p>$x$</p>' } },
+    contentWindow: iframeWindow
+  };
+  const idleSchedule = createIdleScheduleSpy();
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return iframe; } },
+    containsRenderableMath() { return true; },
+    schedule: idleSchedule.config,
+    logger: {
+      warn(...args) {
+        warnings.push(args);
+      }
+    }
+  });
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].src, '/js/mathjax-config.js');
+  appended[0].onload();
+  assert.equal(appended[1].src, mathJaxLoader.MATHJAX_RUNTIME_URL);
+  assert.equal(typeof appended[1].onerror, 'function');
+  appended[1].onerror(new Error('offline'));
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(appended[2].src, '/js/mathjax-config.js');
+  appended[2].onload();
+  assert.equal(appended[3].src, mathJaxLoader.MATHJAX_RUNTIME_URL);
+  iframeWindow.MathJax = {
+    typesetPromise() {
+      iframeWindow.typesetCalls += 1;
+      return Promise.resolve();
+    }
+  };
+  iframeWindow.typesetCalls = 0;
+  appended[3].onload();
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(iframeWindow.typesetCalls, 1);
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0][0], '[Shuohui CMS MathJax]');
 });
 
 test('controller warns and keeps polling when iframe access or typesetting fails', async () => {

@@ -1,5 +1,8 @@
 (function (root, factory) {
-  var api = factory();
+  var mathJaxLoader = typeof module !== 'undefined' && module.exports
+    ? require('./mathjax-loader.js')
+    : root && root.ShuohuiMathJaxLoader;
+  var api = factory(mathJaxLoader);
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;
@@ -8,14 +11,13 @@
   if (root && typeof root === 'object') {
     root.ShuohuiMathJaxPreview = api;
   }
-})(typeof window !== 'undefined' ? window : globalThis, function () {
+})(typeof window !== 'undefined' ? window : globalThis, function (mathJaxLoader) {
   var PREVIEW_SELECTOR = '[role="document"]';
   var ACTIVE_POLL_MS = 500;
   var IDLE_POLL_MS = 2000;
   var DEBOUNCE_MS = 500;
   var IDLE_RENDER_TIMEOUT_MS = 1000;
   var LOG_PREFIX = '[Shuohui CMS MathJax]';
-  var IFRAME_MATHJAX_CDN = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js';
   var MATHJAX_CONFIG_PATH = '/js/mathjax-config.js';
 
   function getPreviewMode(element) {
@@ -34,20 +36,25 @@
       || previous.snapshot !== current.snapshot;
   }
 
-  function appendIframeMathJaxCdn(head) {
+  function appendIframeMathJaxCdn(head, handlers) {
     var script = head.ownerDocument.createElement('script');
-    script.src = IFRAME_MATHJAX_CDN;
+    script.src = mathJaxLoader.MATHJAX_RUNTIME_URL;
     script.async = true;
+    if (handlers) {
+      script.onload = handlers.onload;
+      script.onerror = handlers.onerror;
+    }
     head.appendChild(script);
+    return script;
   }
 
-  function appendIframeMathJaxScripts(head) {
+  function appendIframeMathJaxScripts(head, handlers) {
     var cdnAppended = false;
 
     function appendCdnOnce() {
       if (cdnAppended) return;
       cdnAppended = true;
-      appendIframeMathJaxCdn(head);
+      appendIframeMathJaxCdn(head, handlers);
     }
 
     var configScript = head.ownerDocument.createElement('script');
@@ -55,6 +62,7 @@
     configScript.onload = appendCdnOnce;
     configScript.onerror = appendCdnOnce;
     head.appendChild(configScript);
+    return configScript;
   }
 
   function readSnapshot(node, mode) {
@@ -79,6 +87,12 @@
     var getMathJax = typeof options.getMathJax === 'function'
       ? options.getMathJax
       : function () { return options.mathJax || null; };
+    var containsRenderableMath = typeof options.containsRenderableMath === 'function'
+      ? options.containsRenderableMath
+      : function () { return true; };
+    var ensureMathJax = typeof options.ensureMathJax === 'function'
+      ? options.ensureMathJax
+      : null;
     var pollHandle = null;
     var debounceHandle = null;
     var idleHandle = null;
@@ -172,8 +186,19 @@
       if (!iframe || injectedIframe === iframe) return;
       var iframeDocument = iframe.contentDocument;
       if (!iframeDocument || !iframeDocument.head) return;
-      appendIframeMathJaxScripts(iframeDocument.head);
       injectedIframe = iframe;
+      try {
+        appendIframeMathJaxScripts(iframeDocument.head, {
+          onload: function () {},
+          onerror: function (error) {
+            if (injectedIframe === iframe) injectedIframe = null;
+            warn(error);
+          }
+        });
+      } catch (error) {
+        if (injectedIframe === iframe) injectedIframe = null;
+        throw error;
+      }
     }
 
     function finishRender(snapshot, succeeded) {
@@ -210,34 +235,63 @@
       return Promise.resolve(false);
     }
 
+    function isReadyMathJax(mathJax) {
+      return Boolean(mathJax && typeof mathJax.typesetPromise === 'function');
+    }
+
+    function trackRender(snapshot, promise) {
+      rendering = snapshot;
+      return Promise.resolve(promise).then(function () {
+        return finishRender(snapshot, true);
+      }, function (error) {
+        warn(error);
+        return finishRender(snapshot, false);
+      });
+    }
+
     function renderPreview(snapshot) {
       if (stopped || snapshot.mode === 'none') return Promise.resolve(false);
 
       try {
-        var promise = null;
+        if (!containsRenderableMath(snapshot.snapshot)) {
+          return Promise.resolve(finishRender(snapshot, true));
+        }
 
         if (snapshot.mode === 'inline') {
           var mathJax = getMathJax();
-          if (!mathJax || typeof mathJax.typesetPromise !== 'function') return failScheduledRender();
-          promise = mathJax.typesetPromise([snapshot.node]);
+          if (isReadyMathJax(mathJax)) {
+            var inlinePromise = mathJax.typesetPromise([snapshot.node]);
+            if (!inlinePromise || typeof inlinePromise.then !== 'function') return failScheduledRender();
+            return trackRender(snapshot, inlinePromise);
+          }
+
+          if (!ensureMathJax) return failScheduledRender();
+
+          var loadingPromise = ensureMathJax();
+          return trackRender(snapshot, Promise.resolve(loadingPromise).then(function () {
+            if (stopped) return false;
+            var loadedMathJax = getMathJax();
+            if (!isReadyMathJax(loadedMathJax)) {
+              throw new Error('MathJax runtime loaded without typesetPromise');
+            }
+            var loadedTypesetPromise = loadedMathJax.typesetPromise([snapshot.node]);
+            if (!loadedTypesetPromise || typeof loadedTypesetPromise.then !== 'function') {
+              throw new Error('MathJax typesetPromise did not return a promise');
+            }
+            return loadedTypesetPromise;
+          }));
         } else if (snapshot.mode === 'iframe') {
           injectIframeMathJax(snapshot.node);
           var iframeWindow = snapshot.node && snapshot.node.contentWindow;
-          if (!iframeWindow || !iframeWindow.MathJax || typeof iframeWindow.MathJax.typesetPromise !== 'function') {
+          if (!iframeWindow || !isReadyMathJax(iframeWindow.MathJax)) {
             return failScheduledRender();
           }
-          promise = iframeWindow.MathJax.typesetPromise();
+          var iframePromise = iframeWindow.MathJax.typesetPromise();
+          if (!iframePromise || typeof iframePromise.then !== 'function') return failScheduledRender();
+          return trackRender(snapshot, iframePromise);
         }
 
-        if (!promise || typeof promise.then !== 'function') return failScheduledRender();
-
-        rendering = snapshot;
-        return Promise.resolve(promise).then(function () {
-          return finishRender(snapshot, true);
-        }, function (error) {
-          warn(error);
-          return finishRender(snapshot, false);
-        });
+        return failScheduledRender();
       } catch (error) {
         warn(error);
         rendering = null;
@@ -267,10 +321,6 @@
 
         if (node !== observed.node) {
           injectedIframe = null;
-        }
-
-        if (mode === 'iframe') {
-          injectIframeMathJax(node);
         }
 
         var current = {
@@ -322,9 +372,15 @@
   function startBrowserController(win) {
     var hostWindow = win || (typeof window !== 'undefined' ? window : null);
     if (!hostWindow || !hostWindow.document) return null;
+    var runtimeLoader = mathJaxLoader.createRuntimeLoader({
+      hostWindow: hostWindow,
+      document: hostWindow.document
+    });
 
     var controller = createPreviewController({
+      containsRenderableMath: mathJaxLoader.containsRenderableMath,
       document: hostWindow.document,
+      ensureMathJax: runtimeLoader.ensure,
       getMathJax: function () {
         return hostWindow.MathJax;
       },
