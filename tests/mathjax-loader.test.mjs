@@ -28,6 +28,8 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
     currencyExamples.map((source) => loader.containsRenderableMath(source)),
     [false, false]
   );
+  assert.equal(loader.containsRenderableMath('价格 $100，公式 $2x$。'), true);
+  assert.equal(loader.containsRenderableMath('价格 $100，公式 $2$。'), true);
   assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
 });

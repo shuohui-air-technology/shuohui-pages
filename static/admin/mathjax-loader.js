@@ -13,7 +13,9 @@
     'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js';
 
   function isCurrencyLikeDollar(source, index) {
-    return /^\$(?:\d|\.\d)/.test(source.slice(index));
+    return /^\$(?:\d+(?:[.,]\d+)?|\.\d+)(?=$|[\s,.;:!?，。！？、；：~～\-–—)\]}])/.test(
+      source.slice(index)
+    );
   }
 
   function containsInlineDollarMath(source) {
