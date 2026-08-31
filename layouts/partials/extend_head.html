@@ -1,5 +1,10 @@
-{{ if or .Params.math .Site.Params.math }}
-<script src="/js/mathjax-config.js"></script>
+{{- $needsMath := or .Params.math site.Params.math -}}
+{{- if and (not $needsMath) .IsSection -}}
+  {{- $mathPages := where .RegularPages "Params.math" true -}}
+  {{- $needsMath = gt (len $mathPages) 0 -}}
+{{- end -}}
+{{- if $needsMath }}
+<script src="/js/mathjax-config.js?v=lazy-1"></script>
 <script type="text/javascript" id="MathJax-script" async
   src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
-{{ end }}
+{{- end }}

@@ -16,6 +16,8 @@ test('shared MathJax config defines the four supported delimiters', () => {
   assert.deepEqual(config.tex.displayMath, [['$$', '$$'], ['\\[', '\\]']]);
   assert.equal(config.tex.processEscapes, true);
   assert.equal(config.tex.processEnvironments, true);
+  assert.deepEqual(config.loader.load, ['ui/lazy']);
+  assert.equal(config.options.lazyMargin, '200px');
 });
 
 test('all project MathJax loaders use the same pinned runtime', () => {

@@ -74,3 +74,16 @@
 .profile-description a:hover, .post-content a:hover, .social-icons a:hover {
     background-color: var(--tertiary) !important;
 }
+
+.list .entry-content mjx-container,
+.list .entry-content mjx-container[display="true"] {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    font-size: 0.96em;
+}
+
+.list .entry-content mjx-container[display="true"] mjx-math {
+    display: inline !important;
+}
