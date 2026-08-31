@@ -142,11 +142,8 @@
           if (loadingPromise === currentPromise) loadingPromise = null;
           reject(error);
         }
-        failLoading = fail;
-
-        script.onload = function () {
+        function succeed(loadedMathJax) {
           if (settled) return;
-          var loadedMathJax = getReadyMathJax();
           if (!loadedMathJax) {
             fail(new Error('MathJax runtime loaded without typesetPromise'));
             return;
@@ -155,6 +152,31 @@
           state = 'ready';
           if (loadingPromise === currentPromise) loadingPromise = null;
           resolve(loadedMathJax);
+        }
+        failLoading = fail;
+
+        script.onload = function () {
+          if (settled) return;
+          try {
+            var loadedMathJax = getReadyMathJax();
+            if (loadedMathJax) {
+              succeed(loadedMathJax);
+              return;
+            }
+
+            var mathJax = hostWindow && hostWindow.MathJax;
+            var startupPromise = mathJax && mathJax.startup
+              && mathJax.startup.promise;
+            if (startupPromise && typeof startupPromise.then === 'function') {
+              Promise.resolve(startupPromise).then(function () {
+                succeed(getReadyMathJax());
+              }, fail);
+              return;
+            }
+            fail(new Error('MathJax runtime loaded without typesetPromise'));
+          } catch (error) {
+            fail(error);
+          }
         };
         script.onerror = function () {
           fail(new Error('Failed to load MathJax runtime'));

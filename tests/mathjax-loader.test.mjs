@@ -79,6 +79,16 @@ function createRuntimeFixture(ready = false) {
   return { appended, removed, hostWindow, document };
 }
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
 test('coalesces concurrent runtime requests into one script and one promise', async () => {
   const fixture = createRuntimeFixture();
   const runtime = loader.createRuntimeLoader(fixture);
@@ -115,6 +125,32 @@ test('keeps the in-flight promise when readiness appears before script onload', 
   const afterSuccess = runtime.ensure();
   assert.notEqual(afterSuccess, first);
   assert.equal(await afterSuccess, fixture.hostWindow.MathJax);
+});
+
+test('waits for MathJax startup before requiring typesetPromise', async () => {
+  const fixture = createRuntimeFixture();
+  const startup = createDeferred();
+  const runtime = loader.createRuntimeLoader(fixture);
+  const loading = runtime.ensure();
+  let outcome = 'pending';
+  loading.then(
+    () => { outcome = 'resolved'; },
+    () => { outcome = 'rejected'; }
+  );
+  fixture.hostWindow.MathJax = { startup: { promise: startup.promise } };
+
+  fixture.appended[0].onload();
+  await Promise.resolve();
+
+  assert.equal(outcome, 'pending');
+  assert.equal(runtime.getState(), 'loading');
+  assert.deepEqual(fixture.removed, []);
+
+  fixture.hostWindow.MathJax.typesetPromise = () => Promise.resolve();
+  startup.resolve();
+
+  assert.equal(await loading, fixture.hostWindow.MathJax);
+  assert.equal(runtime.getState(), 'ready');
 });
 
 test('rejects an onload without a ready API and allows a later retry', async () => {
