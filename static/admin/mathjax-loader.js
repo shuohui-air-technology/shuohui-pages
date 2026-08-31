@@ -13,18 +13,37 @@
     'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js';
 
   function isCurrencyLikeDollar(source, index) {
-    return /^\$(?:\d+(?:[.,]\d+)?|\.\d+)(?=$|[\s,.;:!?，。！？、；：~～\-–—)\]}])/.test(
-      source.slice(index)
-    );
+    var amount = /^\$(?:\d+(?:[.,]\d+)?|\.\d+)/.exec(source.slice(index));
+    if (!amount) return false;
+    return source.charAt(index + amount[0].length) !== '$';
+  }
+
+  function isEscapedDollar(source, index) {
+    var backslashCount = 0;
+    for (var cursor = index - 1; cursor >= 0 && source.charAt(cursor) === '\\'; cursor -= 1) {
+      backslashCount += 1;
+    }
+    return backslashCount % 2 === 1;
+  }
+
+  function findInlineDollarPositions(source) {
+    var positions = [];
+    for (var index = 0; index < source.length; index += 1) {
+      if (source.charAt(index) !== '$') continue;
+      if (source.charAt(index - 1) === '$' || source.charAt(index + 1) === '$') continue;
+      if (isEscapedDollar(source, index)) continue;
+      positions.push(index);
+    }
+    return positions;
   }
 
   function containsInlineDollarMath(source) {
-    var pattern = /(^|[^\\$])\$(?!\$)([^$\n]+?)\$/gm;
-    var match;
-
-    while ((match = pattern.exec(source))) {
-      var openingIndex = match.index + match[1].length;
-      var closingIndex = openingIndex + match[2].length + 1;
+    var positions = findInlineDollarPositions(source);
+    for (var index = 0; index < positions.length - 1; index += 1) {
+      var openingIndex = positions[index];
+      var closingIndex = positions[index + 1];
+      var body = source.slice(openingIndex + 1, closingIndex);
+      if (!body || body.indexOf('\n') !== -1) continue;
       if (!isCurrencyLikeDollar(source, openingIndex)
           || !isCurrencyLikeDollar(source, closingIndex)) return true;
     }

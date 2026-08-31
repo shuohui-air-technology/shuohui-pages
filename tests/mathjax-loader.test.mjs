@@ -21,15 +21,22 @@ test('detects complete supported math and ignores incomplete or code-only delimi
 test('ignores paired currency amounts without hiding legitimate inline math', () => {
   const currencyExamples = [
     '价格从 $100 降到 $80。',
-    '价格区间为 $100-$200。'
+    '价格区间为 $100-$200。',
+    '价格从$100降到$80。',
+    '$100美元…$80美元',
+    '$100/$80',
+    '$100USD…$80USD'
   ];
 
   assert.deepEqual(
     currencyExamples.map((source) => loader.containsRenderableMath(source)),
-    [false, false]
+    [false, false, false, false, false, false]
   );
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $2x$。'), true);
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $2$。'), true);
+  assert.equal(loader.containsRenderableMath('价格 $100，公式 $100 + x$。'), true);
+  assert.equal(loader.containsRenderableMath('价格 $100，公式 $2 + x$。'), true);
+  assert.equal(loader.containsRenderableMath('价格 $100，公式 $2-x$。'), true);
   assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
 });
