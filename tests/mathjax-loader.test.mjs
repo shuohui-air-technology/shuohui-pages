@@ -18,6 +18,20 @@ test('detects complete supported math and ignores incomplete or code-only delimi
   assert.equal(loader.containsRenderableMath('正文 `\\(x\\)` 仍是代码'), false);
 });
 
+test('ignores paired currency amounts without hiding legitimate inline math', () => {
+  const currencyExamples = [
+    '价格从 $100 降到 $80。',
+    '价格区间为 $100-$200。'
+  ];
+
+  assert.deepEqual(
+    currencyExamples.map((source) => loader.containsRenderableMath(source)),
+    [false, false]
+  );
+  assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
+  assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
+});
+
 function createRuntimeFixture(ready = false) {
   const appended = [];
   const removed = [];
@@ -61,6 +75,26 @@ test('coalesces concurrent runtime requests into one script and one promise', as
   fixture.appended[0].onload();
   assert.equal(await first, fixture.hostWindow.MathJax);
   assert.equal(runtime.getState(), 'ready');
+});
+
+test('keeps the in-flight promise when readiness appears before script onload', async () => {
+  const fixture = createRuntimeFixture();
+  const runtime = loader.createRuntimeLoader(fixture);
+  const first = runtime.ensure();
+  fixture.hostWindow.MathJax = {
+    typesetPromise() { return Promise.resolve(); }
+  };
+
+  const concurrent = runtime.ensure();
+
+  assert.equal(concurrent, first);
+  assert.equal(runtime.getState(), 'loading');
+  fixture.appended[0].onload();
+  assert.equal(await first, fixture.hostWindow.MathJax);
+
+  const afterSuccess = runtime.ensure();
+  assert.notEqual(afterSuccess, first);
+  assert.equal(await afterSuccess, fixture.hostWindow.MathJax);
 });
 
 test('rejects an onload without a ready API and allows a later retry', async () => {

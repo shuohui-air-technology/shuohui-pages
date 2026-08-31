@@ -670,6 +670,172 @@ test('controller retries iframe runtime injection after a network failure', asyn
   assert.equal(warnings[0][0], '[Shuohui CMS MathJax]');
 });
 
+test('controller retries unchanged iframe math when runtime onload has no ready API', async () => {
+  const appended = [];
+  const removed = [];
+  const warnings = [];
+  const iframeWindow = {};
+  const head = {
+    ownerDocument: {
+      createElement(tag) {
+        return { tagName: tag.toUpperCase() };
+      }
+    },
+    appendChild(node) {
+      node.parentNode = head;
+      appended.push(node);
+      return node;
+    },
+    removeChild(node) {
+      removed.push(node);
+      node.parentNode = null;
+      return node;
+    }
+  };
+  const iframe = {
+    tagName: 'IFRAME',
+    contentDocument: { head, body: { innerHTML: '<p>$x$</p>' } },
+    contentWindow: iframeWindow
+  };
+  const idleSchedule = createIdleScheduleSpy();
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return iframe; } },
+    containsRenderableMath() { return true; },
+    schedule: idleSchedule.config,
+    logger: {
+      warn(...args) {
+        warnings.push(args);
+      }
+    }
+  });
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  appended[0].onload();
+  appended[1].onload();
+
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0][1].message, /typesetPromise/);
+  assert.deepEqual(removed, [appended[1], appended[0]]);
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(appended[2].src, '/js/mathjax-config.js');
+  appended[2].onload();
+  assert.equal(appended[3].src, mathJaxLoader.MATHJAX_RUNTIME_URL);
+  iframeWindow.typesetCalls = 0;
+  iframeWindow.MathJax = {
+    typesetPromise() {
+      iframeWindow.typesetCalls += 1;
+      return Promise.resolve();
+    }
+  };
+  appended[3].onload();
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(iframeWindow.typesetCalls, 1);
+});
+
+test('controller handles a runtime append throw from the iframe config callback', async () => {
+  const appendAttempts = [];
+  const appended = [];
+  const removed = [];
+  const warnings = [];
+  const iframeWindow = {};
+  let rejectRuntimeAppend = true;
+  const head = {
+    ownerDocument: {
+      createElement(tag) {
+        return { tagName: tag.toUpperCase() };
+      }
+    },
+    appendChild(node) {
+      appendAttempts.push(node);
+      if (node.src === mathJaxLoader.MATHJAX_RUNTIME_URL && rejectRuntimeAppend) {
+        rejectRuntimeAppend = false;
+        throw new Error('runtime append blocked');
+      }
+      node.parentNode = head;
+      appended.push(node);
+      return node;
+    },
+    removeChild(node) {
+      removed.push(node);
+      node.parentNode = null;
+      return node;
+    }
+  };
+  const iframe = {
+    tagName: 'IFRAME',
+    contentDocument: { head, body: { innerHTML: '<p>$x$</p>' } },
+    contentWindow: iframeWindow
+  };
+  const idleSchedule = createIdleScheduleSpy();
+  const controller = preview.createPreviewController({
+    document: { querySelector() { return iframe; } },
+    containsRenderableMath() { return true; },
+    schedule: idleSchedule.config,
+    logger: {
+      warn(...args) {
+        warnings.push(args);
+      }
+    }
+  });
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.doesNotThrow(() => appended[0].onload());
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0][1].message, /runtime append blocked/);
+  assert.deepEqual(removed, [appended[0]]);
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(appended[1].src, '/js/mathjax-config.js');
+  appended[1].onload();
+  assert.equal(appended[2].src, mathJaxLoader.MATHJAX_RUNTIME_URL);
+  iframeWindow.typesetCalls = 0;
+  iframeWindow.MathJax = {
+    typesetPromise() {
+      iframeWindow.typesetCalls += 1;
+      return Promise.resolve();
+    }
+  };
+  appended[2].onload();
+
+  await runScheduledPoll(
+    controller,
+    idleSchedule.schedule,
+    idleSchedule.idleCallbacks
+  );
+  assert.equal(iframeWindow.typesetCalls, 1);
+  assert.deepEqual(
+    appendAttempts.map((node) => node.src),
+    [
+      '/js/mathjax-config.js',
+      mathJaxLoader.MATHJAX_RUNTIME_URL,
+      '/js/mathjax-config.js',
+      mathJaxLoader.MATHJAX_RUNTIME_URL
+    ]
+  );
+});
+
 test('controller warns and keeps polling when iframe access or typesetting fails', async () => {
   const warnings = [];
   const scheduleSpy = createScheduleSpy();
