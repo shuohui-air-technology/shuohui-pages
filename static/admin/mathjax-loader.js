@@ -33,7 +33,8 @@
 
   function hasStrongMathSyntax(body) {
     return hasExplicitMathSyntax(body)
-      || /(?:\d\s*[A-Za-z]|[A-Za-z]\s*\d)/.test(body);
+      || /(?:\d\s*[A-Za-z]|[A-Za-z]\s*\d)/.test(body)
+      || /^\s*\d+(?:[.]\d+)?\s*,\s*[A-Za-z]{1,3}(?:\s+[A-Za-z]{1,3})*\s*$/.test(body);
   }
 
   function isCurrencyBridgeBody(body) {
@@ -62,7 +63,7 @@
 
   function hasOrphanLikeClosingBoundary(source, closingIndex) {
     return /\s/.test(source.charAt(closingIndex - 1))
-      || /[A-Za-z0-9_\u3400-\u9fff]/.test(source.charAt(closingIndex + 1));
+      || /[A-Za-z_\u3400-\u9fff]/.test(source.charAt(closingIndex + 1));
   }
 
   function findInlineDollarPositions(source) {
@@ -109,7 +110,7 @@
       ) {
         var nextBody = source.slice(closingIndex + 1, nextClosingIndex);
         if (
-          !hasExplicitMathSyntax(nextBody)
+          !hasStrongMathSyntax(nextBody)
           && hasOrphanLikeClosingBoundary(source, nextClosingIndex)
         ) {
           nextCanOpenMath = false;
