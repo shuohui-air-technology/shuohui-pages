@@ -56,6 +56,7 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   assert.equal(loader.containsRenderableMath('Prices from $100 to $2+x$100 times'), true);
   assert.equal(loader.containsRenderableMath('Prices from $100 to $2xy$100 times'), true);
   assert.equal(loader.containsRenderableMath('Prices from $100 to $2, xy$100 times'), true);
+  assert.equal(loader.containsRenderableMath('Prices from $100 to $2, theta$100 times'), true);
   assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
   assert.equal(
@@ -88,6 +89,14 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   );
   assert.equal(
     loader.containsRenderableMath('Prices from $100 to $80, plus $'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, tax $x'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, fee $'),
     false
   );
 });

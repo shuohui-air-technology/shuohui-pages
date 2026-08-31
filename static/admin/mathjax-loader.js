@@ -34,7 +34,7 @@
   function hasStrongMathSyntax(body) {
     return hasExplicitMathSyntax(body)
       || /(?:\d\s*[A-Za-z]|[A-Za-z]\s*\d)/.test(body)
-      || /^\s*\d+(?:[.]\d+)?\s*,\s*[A-Za-z]{1,3}(?:\s+[A-Za-z]{1,3})*\s*$/.test(body);
+      || /^\s*\d+(?:[.]\d+)?\s*,\s*[A-Za-z]+(?:\s+[A-Za-z]+)*\s*$/.test(body);
   }
 
   function isCurrencyBridgeBody(body) {
@@ -110,7 +110,7 @@
       ) {
         var nextBody = source.slice(closingIndex + 1, nextClosingIndex);
         if (
-          !hasStrongMathSyntax(nextBody)
+          !hasExplicitMathSyntax(nextBody)
           && hasOrphanLikeClosingBoundary(source, nextClosingIndex)
         ) {
           nextCanOpenMath = false;
