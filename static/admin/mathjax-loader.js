@@ -45,7 +45,10 @@
     if (/^(?:USD|EUR|GBP|美元|美金|元)(?:[\s…~～\-–—/.,;:]*)$/i.test(tail)) {
       return true;
     }
-    if (/\b(?:to|each|per|and|or|through|thru|versus|vs|was|now|then|down|up|incomplete|orphan|trailing|price|prices|dollars?|bucks?)\b/i.test(tail)) {
+    if (/\b(?:to|each|per|and|or|through|thru|versus|vs|dollars?|bucks?)\b/i.test(tail)) {
+      return !hasExplicitMathSyntax(body);
+    }
+    if (/[\s,.;:!?]+[A-Za-z]{2,}\b/.test(tail)) {
       return !hasExplicitMathSyntax(body);
     }
     if (/[\u3400-\u9fff，。！？；：、…]/.test(tail)) {

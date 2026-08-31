@@ -46,6 +46,9 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   assert.equal(loader.containsRenderableMath('公式 $2x$$100USD'), true);
   assert.equal(loader.containsRenderableMath('公式 $2\\operatorname{or}3$。'), true);
   assert.equal(loader.containsRenderableMath('公式 $2_{to}$。'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2xy$。'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2, x$。'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2\\text{ plus }x$。'), true);
   assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
   assert.equal(
@@ -66,6 +69,18 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   );
   assert.equal(
     loader.containsRenderableMath('Prices from$100to$80,incomplete$x'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, dangling $'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, note $x'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, plus $'),
     false
   );
 });
