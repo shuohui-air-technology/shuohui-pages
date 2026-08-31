@@ -378,10 +378,19 @@ class SectionRegistryTests(unittest.TestCase):
         )
         readme = (repository_root / "README.md").read_text(encoding="utf-8")
         command = "python3 scripts/sync_sections.py"
+        python_test_command = "python3 -m unittest discover -s tests -v"
+        node_test_command = (
+            "node --test tests/mathjax-config.test.mjs "
+            "tests/mathjax-loader.test.mjs tests/mathjax-preview.test.mjs "
+            "tests/markdown-format.test.mjs cloudflare-gateway/index.test.js"
+        )
 
         self.assertIn(command, workflow)
         self.assertIn("python3 scripts/sync_sections.py --check", workflow)
         self.assertIn("--sections data/sections.json", workflow)
+        self.assertIn("--content content", workflow)
+        self.assertIn(python_test_command, workflow)
+        self.assertIn(node_test_command, workflow)
         for required_output in (
             "--required admin/index.html",
             "--required admin/config.yml",
@@ -398,6 +407,12 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertLess(
             workflow_sync,
             workflow.index("python3 scripts/content_tools.py validate content"),
+        )
+        self.assertLess(
+            workflow.index(python_test_command), workflow.index("hugo --minify")
+        )
+        self.assertLess(
+            workflow.index(node_test_command), workflow.index("hugo --minify")
         )
         self.assertLess(workflow_sync, workflow.index("hugo --minify"))
 
@@ -422,6 +437,7 @@ class SectionRegistryTests(unittest.TestCase):
 
         self.assertIn("data/sections.json", readme)
         self.assertIn("--sections data/sections.json", release_block)
+        self.assertIn("--content content", release_block)
         self.assertIn("single source of truth", readme)
         self.assertIn("change `name` and `weight`", readme)
         self.assertIn("keep existing `slug` values stable", readme)

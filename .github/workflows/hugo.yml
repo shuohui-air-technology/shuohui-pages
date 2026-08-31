@@ -37,6 +37,11 @@ jobs:
           hugo-version: '0.163.2'
           extended: true
 
+      - name: Run unit tests
+        run: |
+          python3 -m unittest discover -s tests -v
+          node --test tests/mathjax-config.test.mjs tests/mathjax-loader.test.mjs tests/mathjax-preview.test.mjs tests/markdown-format.test.mjs cloudflare-gateway/index.test.js
+
       - name: Normalize and validate content
         run: |
           python3 scripts/content_tools.py normalize content
@@ -49,6 +54,7 @@ jobs:
         run: |
           python3 scripts/check_build.py --public public \
             --sections data/sections.json \
+            --content content \
             --required acgn/index.html \
             --required math/index.html \
             --required admin/index.html \

@@ -9,6 +9,13 @@ from pathlib import Path
 from scripts.check_build import check_build
 
 
+MATHJAX_CONFIG_TAG = '<script src="/js/mathjax-config.js?v=lazy-1"></script>'
+MATHJAX_RUNTIME_TAG = (
+    '<script src="https://cdn.jsdelivr.net/npm/'
+    'mathjax@3.2.2/es5/tex-mml-chtml.js"></script>'
+)
+
+
 def _render_hugo_menu(
     sections: list[dict[str, object]], wrong_section: dict[str, object] | None = None
 ) -> str:
@@ -27,7 +34,145 @@ def _write_html(public: Path, relative_path: str, content: str) -> None:
     output_path.write_text(content, encoding="utf-8")
 
 
+def _write_math_page(
+    public: Path,
+    relative_path: str,
+    *,
+    config: bool,
+    runtime: bool,
+) -> None:
+    scripts = (MATHJAX_CONFIG_TAG if config else "") + (
+        MATHJAX_RUNTIME_TAG if runtime else ""
+    )
+    _write_html(public, relative_path, f"<html><head>{scripts}</head></html>")
+    if config:
+        config_path = public / "js" / "mathjax-config.js"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text("window.MathJax = {};", encoding="utf-8")
+
+
 class BuildCheckTests(unittest.TestCase):
+    def test_math_section_requires_mathjax_assets(self):
+        sections = [
+            {"name": "Math", "slug": "math", "weight": 10, "math": True}
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            content.mkdir()
+            _write_math_page(
+                public, "math/index.html", config=False, runtime=False
+            )
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+            )
+        self.assertEqual(
+            errors,
+            [
+                "missing MathJax config: math/index.html",
+                "missing MathJax runtime: math/index.html",
+            ],
+        )
+
+    def test_non_math_section_rejects_unnecessary_mathjax_assets(self):
+        sections = [
+            {"name": "Essays", "slug": "acgn", "weight": 20, "math": False}
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            content.mkdir()
+            _write_math_page(
+                public, "acgn/index.html", config=False, runtime=True
+            )
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+            )
+        self.assertEqual(
+            errors,
+            ["unexpected MathJax runtime: acgn/index.html"],
+        )
+
+    def test_mixed_section_allows_mathjax_when_a_published_child_enables_math(self):
+        sections = [
+            {"name": "Mixed", "slug": "mixed", "weight": 30, "math": False}
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            article = content / "mixed" / "formula.md"
+            article.parent.mkdir(parents=True)
+            article.write_text(
+                '---\n'
+                'title: "Formula"\n'
+                'draft: false\n'
+                'math: true\n'
+                '---\n\n$x$\n',
+                encoding="utf-8",
+            )
+            _write_math_page(
+                public, "mixed/index.html", config=True, runtime=True
+            )
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+            )
+        self.assertEqual(errors, [])
+
+    def test_draft_math_child_does_not_enable_a_non_math_section(self):
+        sections = [
+            {"name": "Mixed", "slug": "mixed", "weight": 30, "math": False}
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            article = content / "mixed" / "draft.md"
+            article.parent.mkdir(parents=True)
+            article.write_text(
+                '---\ntitle: "Draft"\ndraft: true\nmath: true\n---\n',
+                encoding="utf-8",
+            )
+            _write_math_page(
+                public, "mixed/index.html", config=True, runtime=True
+            )
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+            )
+        self.assertEqual(
+            errors,
+            [
+                "unexpected MathJax config: mixed/index.html",
+                "unexpected MathJax runtime: mixed/index.html",
+            ],
+        )
+
     def test_registered_sections_navigation_is_checked_on_all_primary_pages(self):
         registry_path = Path(__file__).resolve().parents[1] / "data" / "sections.json"
         sections = json.loads(registry_path.read_text(encoding="utf-8"))["sections"]

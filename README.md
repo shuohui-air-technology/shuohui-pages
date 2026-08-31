@@ -21,8 +21,7 @@ python3 scripts/sync_sections.py --check
 python3 scripts/content_tools.py normalize content
 python3 scripts/content_tools.py validate content
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-public
-node --test tests/mathjax-config.test.mjs tests/mathjax-preview.test.mjs tests/markdown-format.test.mjs
-node --test cloudflare-gateway/index.test.js
+node --test tests/mathjax-config.test.mjs tests/mathjax-loader.test.mjs tests/mathjax-preview.test.mjs tests/markdown-format.test.mjs cloudflare-gateway/index.test.js
 ```
 
 `data/sections.json` is the single source of truth for section names, order, and
@@ -30,6 +29,11 @@ slugs. When renaming or reordering a section, change `name` and `weight` as
 needed; keep existing `slug` values stable so existing URLs do not change. An
 invalid `slug` value fails during synchronization before deployment. The slug
 `admin` is reserved for the CMS route and cannot be registered as a section.
+The registry's `math` value controls MathJax for a whole section. A non-math
+section also receives MathJax when at least one published child explicitly sets
+`math: true`; draft children do not enable it. Article-list formulas are
+typeset inside the existing two-line summary, and MathJax defers off-screen
+work through its lazy output extension.
 
 For a release-grade smoke check, build and verify the generated output explicitly:
 
@@ -38,8 +42,9 @@ python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
 python3 scripts/sync_sections.py --check
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
-  python3 scripts/check_build.py --public /tmp/shuohui-final-public \
+python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --sections data/sections.json \
+  --content content \
   --required acgn/index.html \
   --required math/index.html \
   --required admin/index.html \

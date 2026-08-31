@@ -10,11 +10,18 @@ from pathlib import Path
 from typing import Iterable
 from urllib.parse import unquote, urljoin, urlparse
 
+try:
+    from scripts.content_tools import parse_front_matter
+except ModuleNotFoundError:  # Direct execution: python3 scripts/check_build.py
+    from content_tools import parse_front_matter
+
 
 ROOT_SRC_RE = re.compile(
     r"\bsrc\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
     re.IGNORECASE,
 )
+MATHJAX_CONFIG_PATH = "/js/mathjax-config.js"
+MATHJAX_RUNTIME_FRAGMENT = "mathjax@3.2.2/es5/tex-mml-chtml.js"
 
 
 def _normalize_relative_path(path: str) -> str:
@@ -186,12 +193,59 @@ def _check_root_relative_assets(public_dir: Path) -> list[str]:
     return errors
 
 
+def _published_section_has_math(content_dir: Path, slug: str) -> bool:
+    section_dir = content_dir / slug
+    if not section_dir.is_dir():
+        return False
+    for path in sorted(section_dir.rglob("*.md")):
+        if path.name == "_index.md":
+            continue
+        front_matter = parse_front_matter(path.read_text(encoding="utf-8"))
+        if (
+            front_matter.get("draft") is not True
+            and front_matter.get("math") is True
+        ):
+            return True
+    return False
+
+
+def _check_math_loading_scope(
+    public_dir: Path,
+    sections: Iterable[dict[str, object]],
+    content_dir: Path,
+) -> list[str]:
+    errors: list[str] = []
+    for section in sections:
+        relative_path = f"{section['slug']}/index.html"
+        output_path = public_dir / relative_path
+        if not output_path.is_file():
+            continue
+        needs_math = section.get("math") is True
+        if not needs_math:
+            needs_math = _published_section_has_math(
+                content_dir, str(section["slug"])
+            )
+        source = output_path.read_text(encoding="utf-8")
+        has_config = MATHJAX_CONFIG_PATH in source
+        has_runtime = MATHJAX_RUNTIME_FRAGMENT in source
+        if needs_math and not has_config:
+            errors.append(f"missing MathJax config: {relative_path}")
+        if needs_math and not has_runtime:
+            errors.append(f"missing MathJax runtime: {relative_path}")
+        if not needs_math and has_config:
+            errors.append(f"unexpected MathJax config: {relative_path}")
+        if not needs_math and has_runtime:
+            errors.append(f"unexpected MathJax runtime: {relative_path}")
+    return errors
+
+
 def check_build(
     public_dir: Path,
     required: Iterable[str],
     forbidden: Iterable[str],
     sections: Iterable[dict[str, object]] | None = None,
     navigation_pages: Iterable[str] | None = None,
+    content_dir: Path | None = None,
 ) -> list[str]:
     errors: list[str] = []
 
@@ -221,6 +275,14 @@ def check_build(
             section_path = f"{section['slug']}/index.html"
             if not (public_dir / section_path).is_file():
                 errors.append(f"missing section index: {section_path}")
+        if content_dir is not None:
+            errors.extend(
+                _check_math_loading_scope(
+                    public_dir,
+                    registered_sections,
+                    content_dir,
+                )
+            )
         pages = (
             list(navigation_pages)
             if navigation_pages is not None
@@ -259,6 +321,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--required", action="append", default=[])
     parser.add_argument("--forbidden", action="append", default=[])
     parser.add_argument("--sections", type=Path)
+    parser.add_argument("--content", type=Path)
     return parser
 
 
@@ -308,6 +371,7 @@ def main(argv: list[str] | None = None) -> int:
         args.required,
         args.forbidden,
         sections=sections,
+        content_dir=args.content,
     )
     if errors:
         for error in errors:
