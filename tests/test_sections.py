@@ -389,6 +389,7 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn("python3 scripts/sync_sections.py --check", workflow)
         self.assertIn("--sections data/sections.json", workflow)
         self.assertIn("--content content", workflow)
+        self.assertIn("--hugo-list /tmp/shuohui-hugo-list.csv", workflow)
         self.assertIn(python_test_command, workflow)
         self.assertIn(node_test_command, workflow)
         for required_output in (
@@ -438,6 +439,11 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn("data/sections.json", readme)
         self.assertIn("--sections data/sections.json", release_block)
         self.assertIn("--content content", release_block)
+        self.assertIn("--hugo-list /tmp/shuohui-hugo-list.csv", release_block)
+        self.assertLess(
+            workflow.index("hugo list all"),
+            workflow.index("python3 scripts/check_build.py"),
+        )
         self.assertIn("single source of truth", readme)
         self.assertIn("change `name` and `weight`", readme)
         self.assertIn("keep existing `slug` values stable", readme)

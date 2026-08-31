@@ -52,9 +52,11 @@ jobs:
 
       - name: Check generated outputs
         run: |
+          hugo list all > /tmp/shuohui-hugo-list.csv
           python3 scripts/check_build.py --public public \
             --sections data/sections.json \
             --content content \
+            --hugo-list /tmp/shuohui-hugo-list.csv \
             --required acgn/index.html \
             --required math/index.html \
             --required admin/index.html \
@@ -63,7 +65,6 @@ jobs:
             --required admin/mathjax-preview.js \
             --required js/mathjax-config.js \
             --required sitemap.xml
-          hugo list all > /tmp/shuohui-hugo-list.csv
           python3 scripts/check_content_outputs.py \
             --public public \
             --hugo-list /tmp/shuohui-hugo-list.csv

@@ -1,3 +1,4 @@
+import csv
 import json
 import subprocess
 import sys
@@ -14,6 +15,18 @@ MATHJAX_RUNTIME_TAG = (
     '<script src="https://cdn.jsdelivr.net/npm/'
     'mathjax@3.2.2/es5/tex-mml-chtml.js"></script>'
 )
+HUGO_LIST_FIELDS = [
+    "path",
+    "slug",
+    "title",
+    "date",
+    "expiryDate",
+    "publishDate",
+    "draft",
+    "permalink",
+    "kind",
+    "section",
+]
 
 
 def _render_hugo_menu(
@@ -40,15 +53,29 @@ def _write_math_page(
     *,
     config: bool,
     runtime: bool,
+    links: tuple[str, ...] = (),
 ) -> None:
     scripts = (MATHJAX_CONFIG_TAG if config else "") + (
         MATHJAX_RUNTIME_TAG if runtime else ""
     )
-    _write_html(public, relative_path, f"<html><head>{scripts}</head></html>")
+    link_markup = "".join(f'<a href="{href}">Article</a>' for href in links)
+    _write_html(
+        public,
+        relative_path,
+        f"<html><head>{scripts}</head><body>{link_markup}</body></html>",
+    )
     if config:
         config_path = public / "js" / "mathjax-config.js"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text("window.MathJax = {};", encoding="utf-8")
+
+
+def _write_hugo_list(path: Path, rows: list[dict[str, str]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=HUGO_LIST_FIELDS)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in HUGO_LIST_FIELDS})
 
 
 class BuildCheckTests(unittest.TestCase):
@@ -61,7 +88,9 @@ class BuildCheckTests(unittest.TestCase):
             public = root / "public"
             content = root / "content"
             public.mkdir()
-            content.mkdir()
+            (content / "math").mkdir(parents=True)
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(hugo_list, [])
             _write_math_page(
                 public, "math/index.html", config=False, runtime=False
             )
@@ -72,6 +101,7 @@ class BuildCheckTests(unittest.TestCase):
                 sections=sections,
                 navigation_pages=[],
                 content_dir=content,
+                hugo_list=hugo_list,
             )
         self.assertEqual(
             errors,
@@ -90,7 +120,9 @@ class BuildCheckTests(unittest.TestCase):
             public = root / "public"
             content = root / "content"
             public.mkdir()
-            content.mkdir()
+            (content / "acgn").mkdir(parents=True)
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(hugo_list, [])
             _write_math_page(
                 public, "acgn/index.html", config=False, runtime=True
             )
@@ -101,6 +133,7 @@ class BuildCheckTests(unittest.TestCase):
                 sections=sections,
                 navigation_pages=[],
                 content_dir=content,
+                hugo_list=hugo_list,
             )
         self.assertEqual(
             errors,
@@ -127,7 +160,28 @@ class BuildCheckTests(unittest.TestCase):
                 encoding="utf-8",
             )
             _write_math_page(
-                public, "mixed/index.html", config=True, runtime=True
+                public,
+                "mixed/index.html",
+                config=True,
+                runtime=True,
+                links=("/mixed/formula/",),
+            )
+            _write_math_page(
+                public, "mixed/formula/index.html", config=True, runtime=True
+            )
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(
+                hugo_list,
+                [
+                    {
+                        "path": "content/mixed/formula.md",
+                        "title": "Formula",
+                        "draft": "false",
+                        "permalink": "https://example.com/mixed/formula/",
+                        "kind": "page",
+                        "section": "mixed",
+                    }
+                ],
             )
             errors = check_build(
                 public,
@@ -136,6 +190,7 @@ class BuildCheckTests(unittest.TestCase):
                 sections=sections,
                 navigation_pages=[],
                 content_dir=content,
+                hugo_list=hugo_list,
             )
         self.assertEqual(errors, [])
 
@@ -157,6 +212,8 @@ class BuildCheckTests(unittest.TestCase):
             _write_math_page(
                 public, "mixed/index.html", config=True, runtime=True
             )
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(hugo_list, [])
             errors = check_build(
                 public,
                 required=[],
@@ -164,6 +221,7 @@ class BuildCheckTests(unittest.TestCase):
                 sections=sections,
                 navigation_pages=[],
                 content_dir=content,
+                hugo_list=hugo_list,
             )
         self.assertEqual(
             errors,
@@ -172,6 +230,139 @@ class BuildCheckTests(unittest.TestCase):
                 "unexpected MathJax runtime: mixed/index.html",
             ],
         )
+
+    def test_math_asset_urls_in_text_or_non_executing_attributes_do_not_count(self):
+        sections = [
+            {"name": "Math", "slug": "math", "weight": 10, "math": True}
+        ]
+        spoofed_source = (
+            '<p>/js/mathjax-config.js and mathjax@3.2.2/es5/tex-mml-chtml.js</p>'
+            '<code>&lt;script src="/js/mathjax-config.js"&gt;&lt;/script&gt;</code>'
+            '<!-- <script src="/js/mathjax-config.js"></script> -->'
+            '<div data-src="/js/mathjax-config.js"></div>'
+            '<script src="https://evil.test/js/mathjax-config.js"></script>'
+            '<script src="https://evil.test/mathjax@3.2.2/'
+            'es5/tex-mml-chtml.js"></script>'
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            (content / "math").mkdir(parents=True)
+            _write_html(public, "math/index.html", spoofed_source)
+            config = public / "js" / "mathjax-config.js"
+            config.parent.mkdir()
+            config.write_text("window.MathJax = {};", encoding="utf-8")
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(hugo_list, [])
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+                hugo_list=hugo_list,
+            )
+
+        self.assertEqual(
+            errors,
+            [
+                "missing MathJax config: math/index.html",
+                "missing MathJax runtime: math/index.html",
+            ],
+        )
+
+    def test_math_asset_urls_in_non_math_prose_do_not_trigger_scope_errors(self):
+        sections = [
+            {"name": "Essay", "slug": "essay", "weight": 10, "math": False}
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            (content / "essay").mkdir(parents=True)
+            _write_html(
+                public,
+                "essay/index.html",
+                "<p>Docs mention /js/mathjax-config.js and "
+                "mathjax@3.2.2/es5/tex-mml-chtml.js.</p>",
+            )
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(hugo_list, [])
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+                hugo_list=hugo_list,
+            )
+
+        self.assertEqual(errors, [])
+
+    def test_unlisted_or_missing_math_child_does_not_enable_section_math(self):
+        sections = [
+            {"name": "Mixed", "slug": "mixed", "weight": 10, "math": False}
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            article = content / "mixed" / "expired.md"
+            article.parent.mkdir(parents=True)
+            article.write_text(
+                "---\ntitle: Expired\ndraft: false\nmath: true\n---\n",
+                encoding="utf-8",
+            )
+            hidden = content / "mixed" / "hidden.md"
+            hidden.write_text(
+                "---\ntitle: Hidden\ndraft: false\nmath: true\n---\n",
+                encoding="utf-8",
+            )
+            public.mkdir()
+            _write_math_page(
+                public, "mixed/index.html", config=False, runtime=False
+            )
+            _write_math_page(
+                public, "mixed/hidden/index.html", config=True, runtime=True
+            )
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(
+                hugo_list,
+                [
+                    {
+                        "path": "content/mixed/expired.md",
+                        "title": "Expired",
+                        "draft": "false",
+                        "permalink": "https://example.com/mixed/expired/",
+                        "kind": "page",
+                        "section": "mixed",
+                    },
+                    {
+                        "path": "content/mixed/hidden.md",
+                        "title": "Hidden",
+                        "draft": "false",
+                        "permalink": "https://example.com/mixed/hidden/",
+                        "kind": "page",
+                        "section": "mixed",
+                    },
+                ],
+            )
+            errors = check_build(
+                public,
+                required=[],
+                forbidden=[],
+                sections=sections,
+                navigation_pages=[],
+                content_dir=content,
+                hugo_list=hugo_list,
+            )
+
+        self.assertEqual(errors, [])
 
     def test_registered_sections_navigation_is_checked_on_all_primary_pages(self):
         registry_path = Path(__file__).resolve().parents[1] / "data" / "sections.json"
@@ -553,6 +744,89 @@ class BuildCheckTests(unittest.TestCase):
                     "name" if index == 0 else "slug",
                     result.stderr,
                 )
+
+    def test_cli_rejects_invalid_or_incomplete_content_scope_inputs(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        script_path = repository_root / "scripts" / "check_build.py"
+        sections = [
+            {"name": "Mixed", "slug": "mixed", "weight": 10, "math": False}
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            content = root / "content"
+            public.mkdir()
+            (content / "mixed").mkdir(parents=True)
+            _write_html(public, "mixed/index.html", _render_hugo_menu(sections))
+            registry = root / "sections.json"
+            registry.write_text(
+                json.dumps({"sections": sections}),
+                encoding="utf-8",
+            )
+            hugo_list = root / "hugo-list.csv"
+            _write_hugo_list(hugo_list, [])
+
+            invalid_path = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--public",
+                    str(public),
+                    "--sections",
+                    str(registry),
+                    "--content",
+                    str(root / "content-typo"),
+                    "--hugo-list",
+                    str(hugo_list),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            missing_sections = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--public",
+                    str(public),
+                    "--content",
+                    str(content),
+                    "--hugo-list",
+                    str(hugo_list),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            incomplete_content = root / "incomplete-content"
+            incomplete_content.mkdir()
+            missing_registered_section = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--public",
+                    str(public),
+                    "--sections",
+                    str(registry),
+                    "--content",
+                    str(incomplete_content),
+                    "--hugo-list",
+                    str(hugo_list),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+        self.assertEqual(invalid_path.returncode, 2)
+        self.assertIn("content directory", invalid_path.stderr)
+        self.assertEqual(missing_sections.returncode, 2)
+        self.assertIn("requires --sections", missing_sections.stderr)
+        self.assertEqual(missing_registered_section.returncode, 2)
+        self.assertIn(
+            "missing registered sections", missing_registered_section.stderr
+        )
 
     def test_required_and_forbidden_paths_are_checked(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import posixpath
-import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -16,12 +16,11 @@ except ModuleNotFoundError:  # Direct execution: python3 scripts/check_build.py
     from content_tools import parse_front_matter
 
 
-ROOT_SRC_RE = re.compile(
-    r"\bsrc\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
-    re.IGNORECASE,
-)
 MATHJAX_CONFIG_PATH = "/js/mathjax-config.js"
-MATHJAX_RUNTIME_FRAGMENT = "mathjax@3.2.2/es5/tex-mml-chtml.js"
+MATHJAX_RUNTIME_URL = (
+    "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"
+)
+HUGO_INVENTORY_COLUMNS = {"path", "draft", "permalink", "kind", "section"}
 
 
 def _normalize_relative_path(path: str) -> str:
@@ -34,6 +33,17 @@ def _validate_relative_path(path: str) -> str | None:
     if candidate.is_absolute() or ".." in candidate.parts:
         return f"invalid output path: {normalized_path}"
     return None
+
+
+def _normalized_url_path(url: str, page_path: str = "index.html") -> str:
+    base_url = f"https://shuohui.invalid/{page_path.lstrip('/')}"
+    raw_path = unquote(urlparse(urljoin(base_url, url)).path or "/")
+    path = posixpath.normpath(raw_path)
+    if not path.startswith("/"):
+        path = f"/{path}"
+    if path != "/" and not path.endswith("/"):
+        path = f"{path}/"
+    return path
 
 
 HTML_VOID_TAGS = frozenset(
@@ -105,14 +115,7 @@ class _MenuLinkParser(HTMLParser):
         normalized_tag = tag.lower()
         if normalized_tag == "a" and self._current_href is not None:
             href = self._current_href
-            base_url = f"https://shuohui.invalid/{self._page_path.lstrip('/')}"
-            path = posixpath.normpath(
-                urlparse(urljoin(base_url, href)).path or "/"
-            )
-            if not path.startswith("/"):
-                path = f"/{path}"
-            if path != "/" and not path.endswith("/"):
-                path = f"{path}/"
+            path = _normalized_url_path(href, self._page_path)
             text = "".join(self._current_text).strip()
             self.links.add((text, path))
             self._current_href = None
@@ -127,6 +130,74 @@ class _MenuLinkParser(HTMLParser):
             and len(self._tag_stack) < self._menu_root_depth
         ):
             self._menu_root_depth = None
+
+
+class _SourceAttributeParser(HTMLParser):
+    RESOURCE_TAGS = frozenset(
+        {
+            "audio",
+            "embed",
+            "iframe",
+            "img",
+            "input",
+            "script",
+            "source",
+            "track",
+            "video",
+        }
+    )
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.sources: list[str] = []
+
+    def _inspect(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() not in self.RESOURCE_TAGS:
+            return
+        source = dict(attrs).get("src")
+        if source:
+            self.sources.append(source)
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._inspect(tag, attrs)
+
+    def handle_startendtag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        self._inspect(tag, attrs)
+
+
+class _ScriptSourceParser(HTMLParser):
+    EXECUTABLE_TYPES = frozenset(
+        {"", "application/javascript", "module", "text/javascript"}
+    )
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.sources: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "script":
+            return
+        attributes = {name.lower(): value or "" for name, value in attrs}
+        source = attributes.get("src")
+        script_type = attributes.get("type", "").strip().lower()
+        if source and script_type in self.EXECUTABLE_TYPES:
+            self.sources.append(source)
+
+
+class _PageLinkParser(HTMLParser):
+    def __init__(self, page_path: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self._page_path = page_path
+        self.paths: set[str] = set()
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "a":
+            return
+        href = dict(attrs).get("href")
+        if href:
+            self.paths.add(_normalized_url_path(href, self._page_path))
 
 
 class _RedirectMetaParser(HTMLParser):
@@ -175,8 +246,10 @@ def _check_root_relative_assets(public_dir: Path) -> list[str]:
     for html_path in sorted(public_dir.rglob("*.html")):
         relative_html_path = html_path.relative_to(public_dir).as_posix()
         source = html_path.read_text(encoding="utf-8")
-        for match in ROOT_SRC_RE.finditer(source):
-            source_url = next(value for value in match.groups() if value is not None)
+        parser = _SourceAttributeParser()
+        parser.feed(source)
+        parser.close()
+        for source_url in parser.sources:
             parsed = urlparse(source_url)
             if parsed.scheme or parsed.netloc or not parsed.path.startswith("/"):
                 continue
@@ -193,41 +266,138 @@ def _check_root_relative_assets(public_dir: Path) -> list[str]:
     return errors
 
 
-def _published_section_has_math(content_dir: Path, slug: str) -> bool:
-    section_dir = content_dir / slug
-    if not section_dir.is_dir():
-        return False
-    for path in sorted(section_dir.rglob("*.md")):
-        if path.name == "_index.md":
+def _load_hugo_inventory(path: Path) -> tuple[list[dict[str, str]], list[str]]:
+    try:
+        with path.open(encoding="utf-8", newline="") as stream:
+            reader = csv.DictReader(stream)
+            missing_columns = HUGO_INVENTORY_COLUMNS - set(reader.fieldnames or [])
+            if missing_columns:
+                return [], [
+                    "Hugo content inventory missing columns: "
+                    + ", ".join(sorted(missing_columns))
+                ]
+            return list(reader), []
+    except FileNotFoundError:
+        return [], [f"Hugo content inventory not found: {path}"]
+    except (OSError, csv.Error) as error:
+        return [], [f"failed to read Hugo content inventory: {path}: {error}"]
+
+
+def _output_path_from_permalink(permalink: str) -> Path:
+    raw_path = unquote(urlparse(permalink).path or "/")
+    had_trailing_slash = raw_path.endswith("/")
+    path = posixpath.normpath(f"/{raw_path.lstrip('/')}").lstrip("/")
+    if not path:
+        return Path("index.html")
+    if had_trailing_slash:
+        path = f"{path}/index.html"
+    return Path(path)
+
+
+def _inventory_source_path(content_dir: Path, inventory_path: str) -> Path | None:
+    raw_path = Path(inventory_path)
+    candidates = (
+        raw_path if raw_path.is_absolute() else content_dir.parent / raw_path,
+        content_dir / raw_path,
+    )
+    content_root = content_dir.resolve()
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+            resolved.relative_to(content_root)
+        except (OSError, ValueError):
             continue
-        front_matter = parse_front_matter(path.read_text(encoding="utf-8"))
+        if resolved.is_file():
+            return resolved
+    return None
+
+
+def _published_section_has_math(
+    public_dir: Path,
+    content_dir: Path,
+    slug: str,
+    section_path: str,
+    section_source: str,
+    inventory: Iterable[dict[str, str]],
+) -> tuple[bool, list[str]]:
+    parser = _PageLinkParser(section_path)
+    parser.feed(section_source)
+    parser.close()
+    errors: list[str] = []
+
+    for row in inventory:
+        if row.get("kind") != "page" or row.get("section") != slug:
+            continue
+        if row.get("draft", "").strip().lower() == "true":
+            continue
+        permalink = row.get("permalink", "")
+        if not permalink or _normalized_url_path(permalink) not in parser.paths:
+            continue
+        if not (public_dir / _output_path_from_permalink(permalink)).is_file():
+            continue
+        source_path = _inventory_source_path(content_dir, row.get("path", ""))
+        if source_path is None:
+            errors.append(f"missing Hugo inventory source: {row.get('path', '')}")
+            continue
+        front_matter = parse_front_matter(source_path.read_text(encoding="utf-8"))
+        if front_matter.get("math") is True:
+            return True, errors
+    return False, errors
+
+
+def _mathjax_assets(source: str) -> tuple[bool, bool]:
+    parser = _ScriptSourceParser()
+    parser.feed(source)
+    parser.close()
+    expected_runtime = urlparse(MATHJAX_RUNTIME_URL)
+    has_config = False
+    has_runtime = False
+
+    for source_url in parser.sources:
+        parsed = urlparse(source_url)
         if (
-            front_matter.get("draft") is not True
-            and front_matter.get("math") is True
+            not parsed.scheme
+            and not parsed.netloc
+            and unquote(parsed.path) == MATHJAX_CONFIG_PATH
         ):
-            return True
-    return False
+            has_config = True
+        if (
+            parsed.scheme == expected_runtime.scheme
+            and parsed.netloc == expected_runtime.netloc
+            and parsed.path == expected_runtime.path
+        ):
+            has_runtime = True
+    return has_config, has_runtime
 
 
 def _check_math_loading_scope(
     public_dir: Path,
     sections: Iterable[dict[str, object]],
     content_dir: Path,
+    hugo_list: Path,
 ) -> list[str]:
     errors: list[str] = []
+    inventory, inventory_errors = _load_hugo_inventory(hugo_list)
+    if inventory_errors:
+        return inventory_errors
     for section in sections:
         relative_path = f"{section['slug']}/index.html"
         output_path = public_dir / relative_path
         if not output_path.is_file():
             continue
+        source = output_path.read_text(encoding="utf-8")
         needs_math = section.get("math") is True
         if not needs_math:
-            needs_math = _published_section_has_math(
-                content_dir, str(section["slug"])
+            needs_math, source_errors = _published_section_has_math(
+                public_dir,
+                content_dir,
+                str(section["slug"]),
+                relative_path,
+                source,
+                inventory,
             )
-        source = output_path.read_text(encoding="utf-8")
-        has_config = MATHJAX_CONFIG_PATH in source
-        has_runtime = MATHJAX_RUNTIME_FRAGMENT in source
+            errors.extend(source_errors)
+        has_config, has_runtime = _mathjax_assets(source)
         if needs_math and not has_config:
             errors.append(f"missing MathJax config: {relative_path}")
         if needs_math and not has_runtime:
@@ -246,8 +416,14 @@ def check_build(
     sections: Iterable[dict[str, object]] | None = None,
     navigation_pages: Iterable[str] | None = None,
     content_dir: Path | None = None,
+    hugo_list: Path | None = None,
 ) -> list[str]:
     errors: list[str] = []
+
+    if content_dir is not None and sections is None:
+        errors.append("content scope requires sections")
+    if hugo_list is not None and content_dir is None:
+        errors.append("Hugo content inventory requires content directory")
 
     for relative_path in required:
         normalized_path = _normalize_relative_path(relative_path)
@@ -271,16 +447,33 @@ def check_build(
 
     if sections is not None:
         registered_sections = list(sections)
+        content_scope_valid = False
         for section in registered_sections:
             section_path = f"{section['slug']}/index.html"
             if not (public_dir / section_path).is_file():
                 errors.append(f"missing section index: {section_path}")
-        if content_dir is not None:
+        if content_dir is not None and not content_dir.is_dir():
+            errors.append(f"invalid content directory: {content_dir}")
+        elif content_dir is not None:
+            missing_content_sections: list[str] = []
+            for section in registered_sections:
+                slug = str(section["slug"])
+                if not (content_dir / slug).is_dir():
+                    missing_content_sections.append(slug)
+            errors.extend(
+                f"missing content section: {slug}"
+                for slug in missing_content_sections
+            )
+            content_scope_valid = not missing_content_sections
+        if content_scope_valid and hugo_list is None:
+            errors.append("missing Hugo content inventory")
+        elif content_scope_valid and content_dir is not None and hugo_list is not None:
             errors.extend(
                 _check_math_loading_scope(
                     public_dir,
                     registered_sections,
                     content_dir,
+                    hugo_list,
                 )
             )
         pages = (
@@ -322,6 +515,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--forbidden", action="append", default=[])
     parser.add_argument("--sections", type=Path)
     parser.add_argument("--content", type=Path)
+    parser.add_argument("--hugo-list", type=Path)
     return parser
 
 
@@ -366,12 +560,41 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as error:
             print(f"failed to read sections registry: {error}", file=sys.stderr)
             return 2
+    if args.content is not None and sections is None:
+        print("--content requires --sections", file=sys.stderr)
+        return 2
+    if args.hugo_list is not None and args.content is None:
+        print("--hugo-list requires --content", file=sys.stderr)
+        return 2
+    if args.content is not None and not args.content.is_dir():
+        print(f"invalid content directory: {args.content}", file=sys.stderr)
+        return 2
+    if args.content is not None and args.hugo_list is None:
+        print("--content requires --hugo-list", file=sys.stderr)
+        return 2
+    if args.hugo_list is not None and not args.hugo_list.is_file():
+        print(f"invalid Hugo content inventory: {args.hugo_list}", file=sys.stderr)
+        return 2
+    if args.content is not None and sections is not None:
+        missing_sections = [
+            str(section["slug"])
+            for section in sections
+            if not (args.content / str(section["slug"])).is_dir()
+        ]
+        if missing_sections:
+            print(
+                "content directory missing registered sections: "
+                + ", ".join(missing_sections),
+                file=sys.stderr,
+            )
+            return 2
     errors = check_build(
         args.public,
         args.required,
         args.forbidden,
         sections=sections,
         content_dir=args.content,
+        hugo_list=args.hugo_list,
     )
     if errors:
         for error in errors:

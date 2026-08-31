@@ -33,7 +33,10 @@ The registry's `math` value controls MathJax for a whole section. A non-math
 section also receives MathJax when at least one published child explicitly sets
 `math: true`; draft children do not enable it. Article-list formulas are
 typeset inside the existing two-line summary, and MathJax defers off-screen
-work through its lazy output extension.
+work through its lazy output extension. The release checker combines Hugo's
+content inventory, generated article outputs, and actual section-list links;
+only executable script tags count as MathJax assets, so prose and code examples
+cannot spoof the check.
 
 For a release-grade smoke check, build and verify the generated output explicitly:
 
@@ -42,9 +45,11 @@ python3 scripts/bootstrap_theme.py
 python3 scripts/sync_sections.py
 python3 scripts/sync_sections.py --check
 hugo --minify --gc --buildFuture --destination /tmp/shuohui-final-public
+hugo list all > /tmp/shuohui-hugo-list.csv
 python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --sections data/sections.json \
   --content content \
+  --hugo-list /tmp/shuohui-hugo-list.csv \
   --required acgn/index.html \
   --required math/index.html \
   --required admin/index.html \
@@ -53,7 +58,6 @@ python3 scripts/check_build.py --public /tmp/shuohui-final-public \
   --required admin/mathjax-preview.js \
   --required js/mathjax-config.js \
   --required sitemap.xml
-hugo list all > /tmp/shuohui-hugo-list.csv
 python3 scripts/check_content_outputs.py \
   --public /tmp/shuohui-final-public \
   --hugo-list /tmp/shuohui-hugo-list.csv
