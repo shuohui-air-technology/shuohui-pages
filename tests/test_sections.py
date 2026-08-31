@@ -401,6 +401,12 @@ class SectionRegistryTests(unittest.TestCase):
         ):
             self.assertIn(required_output, workflow)
         workflow_sync = workflow.index(command)
+        workflow_normalize = workflow.index(
+            "python3 scripts/content_tools.py normalize content"
+        )
+        workflow_validate = workflow.index(
+            "python3 scripts/content_tools.py validate content"
+        )
         self.assertLess(
             workflow.index("python3 scripts/bootstrap_theme.py"),
             workflow_sync,
@@ -416,9 +422,11 @@ class SectionRegistryTests(unittest.TestCase):
             workflow.index(node_test_command), workflow.index("hugo --minify")
         )
         self.assertLess(
-            workflow.index("python3 scripts/content_tools.py normalize content"),
-            workflow.index(python_test_command),
+            workflow_normalize,
+            workflow_validate,
         )
+        self.assertLess(workflow_validate, workflow.index(python_test_command))
+        self.assertLess(workflow_validate, workflow.index(node_test_command))
         self.assertLess(workflow_sync, workflow.index("hugo --minify"))
 
         normal_block_start = readme.index("```bash")
@@ -439,10 +447,18 @@ class SectionRegistryTests(unittest.TestCase):
         for block in (normal_block, release_block):
             self.assertIn(command, block)
             self.assertLess(block.index(command), block.index("hugo --minify"))
-            self.assertLess(
-                block.index("python3 scripts/content_tools.py normalize content"),
-                block.index(python_test_command),
+            block_normalize = block.index(
+                "python3 scripts/content_tools.py normalize content"
             )
+            block_validate = block.index(
+                "python3 scripts/content_tools.py validate content"
+            )
+            self.assertLess(
+                block_normalize,
+                block_validate,
+            )
+            self.assertLess(block_validate, block.index(python_test_command))
+            self.assertLess(block_validate, block.index(node_test_command))
             self.assertLess(
                 block.index(python_test_command), block.index("hugo --minify")
             )

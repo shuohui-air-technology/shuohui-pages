@@ -26,9 +26,13 @@
     return backslashCount % 2 === 1;
   }
 
-  function hasStrongMathSyntax(body) {
+  function hasExplicitMathSyntax(body) {
     return /\\[A-Za-z]+|[{}^_=<>()[\]]/.test(body)
-      || /\S\s*[+\-*/]\s*\S/.test(body)
+      || /\S\s*[+\-*/]\s*\S/.test(body);
+  }
+
+  function hasStrongMathSyntax(body) {
+    return hasExplicitMathSyntax(body)
       || /(?:\d\s*[A-Za-z]|[A-Za-z]\s*\d)/.test(body);
   }
 
@@ -40,6 +44,9 @@
     if (!tail) return true;
     if (/^(?:USD|EUR|GBP|美元|美金|元)(?:[\s…~～\-–—/.,;:]*)$/i.test(tail)) {
       return true;
+    }
+    if (/\b(?:to|each|per|and|or|through|thru|versus|vs|was|now|then|down|up|incomplete|orphan|trailing|price|prices|dollars?|bucks?)\b/i.test(tail)) {
+      return !hasExplicitMathSyntax(body);
     }
     if (/[\u3400-\u9fff，。！？；：、…]/.test(tail)) {
       return !hasStrongMathSyntax(body);

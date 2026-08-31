@@ -745,6 +745,47 @@ class BuildCheckTests(unittest.TestCase):
                     result.stderr,
                 )
 
+    def test_cli_rejects_unsafe_reserved_and_duplicate_section_slugs(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        script_path = repository_root / "scripts" / "check_build.py"
+        invalid_registries = [
+            [{"name": "Escape", "slug": "../escape"}],
+            [{"name": "Admin", "slug": "admin"}],
+            [
+                {"name": "First", "slug": "shared"},
+                {"name": "Second", "slug": "shared"},
+            ],
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            public.mkdir()
+
+            for index, sections in enumerate(invalid_registries):
+                registry_path = root / f"unsafe-sections-{index}.json"
+                registry_path.write_text(
+                    json.dumps({"sections": sections}),
+                    encoding="utf-8",
+                )
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(script_path),
+                        "--public",
+                        str(public),
+                        "--sections",
+                        str(registry_path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn("failed to read sections registry", result.stderr)
+                self.assertIn("slug", result.stderr)
+
     def test_cli_rejects_invalid_or_incomplete_content_scope_inputs(self):
         repository_root = Path(__file__).resolve().parents[1]
         script_path = repository_root / "scripts" / "check_build.py"

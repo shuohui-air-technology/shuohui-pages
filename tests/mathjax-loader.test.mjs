@@ -25,12 +25,16 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
     '价格从$100降到$80。',
     '$100美元…$80美元',
     '$100/$80',
-    '$100USD…$80USD'
+    '$100USD…$80USD',
+    'Price fell from$100to$80.',
+    'Prices run from $100 to $80.',
+    'Tickets cost $100each or $80each.',
+    '$100USD to $80USD'
   ];
 
   assert.deepEqual(
     currencyExamples.map((source) => loader.containsRenderableMath(source)),
-    [false, false, false, false, false, false]
+    [false, false, false, false, false, false, false, false, false, false]
   );
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $2x$。'), true);
   assert.equal(loader.containsRenderableMath('价格 $100，公式 $2$。'), true);
@@ -40,6 +44,8 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   assert.equal(loader.containsRenderableMath('公式 $2+x$100 次'), true);
   assert.equal(loader.containsRenderableMath('公式 $x$$100美元'), true);
   assert.equal(loader.containsRenderableMath('公式 $2x$$100USD'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2\\operatorname{or}3$。'), true);
+  assert.equal(loader.containsRenderableMath('公式 $2_{to}$。'), true);
   assert.equal(loader.containsRenderableMath('方程为 $100 + x$。'), true);
   assert.equal(loader.containsRenderableMath('总价为 $x + 80$。'), true);
   assert.equal(
@@ -48,6 +54,18 @@ test('ignores paired currency amounts without hiding legitimate inline math', ()
   );
   assert.equal(
     loader.containsRenderableMath('价格从 $100 到 $80，末尾孤立 $'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, incomplete $x'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from $100 to $80, trailing $'),
+    false
+  );
+  assert.equal(
+    loader.containsRenderableMath('Prices from$100to$80,incomplete$x'),
     false
   );
 });

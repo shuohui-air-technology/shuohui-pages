@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import posixpath
+import re
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -21,6 +22,7 @@ MATHJAX_RUNTIME_URL = (
     "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"
 )
 HUGO_INVENTORY_COLUMNS = {"path", "draft", "permalink", "kind", "section"}
+SECTION_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def _normalize_relative_path(path: str) -> str:
@@ -535,6 +537,7 @@ def _load_sections_registry(path: Path) -> list[dict[str, object]]:
         raise ValueError(f"{path}: sections must contain objects")
 
     sections: list[dict[str, object]] = []
+    seen_slugs: set[str] = set()
     for index, raw_section in enumerate(payload["sections"]):
         section = dict(raw_section)
         name = section.get("name")
@@ -543,10 +546,19 @@ def _load_sections_registry(path: Path) -> list[dict[str, object]]:
                 f"{path}: sections[{index}].name: required non-empty string"
             )
         slug = section.get("slug")
-        if not isinstance(slug, str) or not slug.strip():
+        if not isinstance(slug, str) or not SECTION_SLUG_RE.fullmatch(slug):
             raise ValueError(
-                f"{path}: sections[{index}].slug: required non-empty string"
+                f"{path}: sections[{index}].slug: invalid value {slug!r}"
             )
+        if slug == "admin":
+            raise ValueError(
+                f"{path}: sections[{index}].slug: reserved value 'admin'"
+            )
+        if slug in seen_slugs:
+            raise ValueError(
+                f"{path}: sections[{index}].slug: duplicate value {slug!r}"
+            )
+        seen_slugs.add(slug)
         sections.append(section)
     return sections
 
