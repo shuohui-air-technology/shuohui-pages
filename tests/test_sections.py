@@ -492,7 +492,7 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn("paths:", workflow)
         self.assertIn("- 'static/images/**'", workflow)
         self.assertIn("if: github.actor != 'github-actions[bot]'", workflow)
-        self.assertIn("uses: actions/checkout@v4", workflow)
+        self.assertIn("uses: actions/checkout@v7", workflow)
         self.assertIn(
             "uses: calibreapp/image-actions@9d037c06280028c110ff61c433ad4dc7d33c3c43",
             workflow,
@@ -506,6 +506,9 @@ class SectionRegistryTests(unittest.TestCase):
         )
 
         self.assertIn('cancel-in-progress: true', workflow)
+        self.assertIn("uses: actions/checkout@v7", workflow)
+        self.assertIn("uses: actions/upload-pages-artifact@v5", workflow)
+        self.assertIn("uses: actions/deploy-pages@v5", workflow)
 
     def _write_content_layout(self, repo_root: Path, section_slugs: list[str]) -> None:
         content_root = repo_root / "content"
