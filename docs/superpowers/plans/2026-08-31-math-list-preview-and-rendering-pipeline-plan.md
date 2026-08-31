@@ -984,7 +984,7 @@ git commit -m "test: enforce math rendering scope in builds"
 
 **Files:**
 - Review: every file changed since `cafe81d`
-- Update after successful deployment: `/Users/pc/Desktop/shuohui-uk-项目全信息汇总.md`
+- Update after successful deployment: `/Users/pc/Desktop/shuohui-pages/shuohui-uk-项目全信息汇总.md` (local internal file in the primary checkout; keep it untracked)
 
 **Interfaces:**
 - Consumes: all Task 1–4 commits.
@@ -1066,7 +1066,7 @@ On `https://shuohui.uk`, repeat the public browser checks and confirm `/admin/in
 
 - [ ] **Step 6: Update the desktop internal project summary**
 
-Using `apply_patch`, update `/Users/pc/Desktop/shuohui-uk-项目全信息汇总.md` with:
+Using `apply_patch`, update `/Users/pc/Desktop/shuohui-pages/shuohui-uk-项目全信息汇总.md` with:
 
 - the public list MathJax data flow;
 - the generated section `math` field;
@@ -1076,6 +1076,7 @@ Using `apply_patch`, update `/Users/pc/Desktop/shuohui-uk-项目全信息汇总.
 - final test counts, commit SHA, Actions run URL, and live verification result.
 
 Preserve all existing internal tokens and secret-related notes as requested by the user.
+Do not add this local internal file to Git or modify the former Desktop-level copy.
 
 - [ ] **Step 7: Final clean-state verification**
 
