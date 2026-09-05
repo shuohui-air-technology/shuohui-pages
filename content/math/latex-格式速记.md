@@ -12,9 +12,6 @@ cover: null
 > 看效果 → 找代码 → 复制修改。  
 > 面向数学学习、Jupyter Notebook、Markdown、Hugo 博客与科研写作的 LaTeX 数学公式速查表。
 
-
-
-
 # 0. 最常用结构
 
 ## 上下标
@@ -79,7 +76,7 @@ $$
 效果：
 
 $$
-\int_a^b f(x)\,dx
+\int_a^b f(x),dx
 $$
 
 ## 极限
@@ -119,11 +116,8 @@ $$
 效果：
 
 $$
-f(x)= \begin{cases} x^2, & x\ge0,\\ -x, & x<0. \end{cases}
+f(x)= 
 $$
-
-
-
 
 # 1. 公式模式
 
@@ -132,7 +126,7 @@ $$
 源码：
 
 ```plain
-函数 $f(x)=x^2$ 在 $x=0$ 处取得最小值。
+函数 
 ```
 
 效果：
@@ -170,9 +164,6 @@ f(x)=x^2
 f(x)=x^2
 \end{equation}
 ```
-
-
-
 
 # 2. 上标与下标
 
@@ -221,9 +212,6 @@ x_i^2,\qquad x_{ij}^{(k)},\qquad a_n^{m+1}
 $$
 
 > 多字符上下标建议始终使用 `{}`，例如 `x^{10}`、`x_{10}`。
-
-
-
 
 # 3. 分数
 
@@ -296,11 +284,8 @@ $$
 效果：
 
 $$
-\frac{\partial^2 f}{\partial x\,\partial y}
+\frac{\partial^2 f}{\partial x,\partial y}
 $$
-
-
-
 
 # 4. 根号
 
@@ -317,9 +302,6 @@ $$
 \sqrt{x},\qquad \sqrt{x^2+y^2},\qquad \sqrt[n]{x},\qquad \sqrt[3]{8}
 $$
 
-
-
-
 # 5. 括号与定界符
 
 ## 普通括号
@@ -333,7 +315,7 @@ $$
 效果：
 
 $$
-(a+b),\qquad [a+b],\qquad \{a+b\}
+(a+b),\qquad [a+b],\qquad {a+b}
 $$
 
 ## 自动调整大小
@@ -369,7 +351,7 @@ $$
 效果：
 
 $$
-\left\{ \frac{x+1}{x-1} \right\}
+\left{ \frac{x+1}{x-1} \right}
 $$
 
 ## 绝对值
@@ -415,9 +397,6 @@ $$
 
 `.` 表示不可见定界符。
 
-
-
-
 # 6. 分段函数与方程组
 
 ## 分段函数
@@ -433,7 +412,7 @@ x^2, & x\ge0,\
 效果：
 
 $$
-f(x)= \begin{cases} x^2, & x\ge0,\\ -x, & x<0. \end{cases}
+f(x)= 
 $$
 
 ## 三段函数
@@ -450,7 +429,7 @@ f(x)=
 效果：
 
 $$
-f(x)= \begin{cases} -1, & x<0,\\ 0, & x=0,\\ 1, & x>0. \end{cases}
+f(x)= 
 $$
 
 ## 方程组
@@ -465,7 +444,7 @@ x+y=3,\
 效果：
 
 $$
-\begin{cases} x+y=3,\\ 2x-y=0. \end{cases}
+\begin{cases} x+y=3,\ 2x-y=0. \end{cases}
 $$
 
 ## 带文字说明
@@ -480,11 +459,8 @@ x+y=3, & \text{第一式},\
 效果：
 
 $$
-\begin{cases} x+y=3, & \text{第一式},\\ 2x-y=0, & \text{第二式}. \end{cases}
+\begin{cases} x+y=3, & \text{第一式},\ 2x-y=0, & \text{第二式}. \end{cases}
 $$
-
-
-
 
 # 7. 希腊字母
 
@@ -506,7 +482,7 @@ $$
 | kappa | `\kappa` | \kappa |
 | lambda | `\lambda` | \lambda |
 | mu | `\mu` | \mu |
-| nu | `\nu` | \nu |
+| nu | \`\nu\` | u |
 | xi | `\xi` | \xi |
 | pi | `\pi` | \pi |
 | varpi | `\varpi` | \varpi |
@@ -555,9 +531,6 @@ $$
 | Rho | `P` |
 | Tau | `T` |
 | Chi | `X` |
-
-
-
 
 # 8. 求和、连乘、积分与极限
 
@@ -618,7 +591,7 @@ $$
 效果：
 
 $$
-\int f(x)\,dx
+\int f(x),dx
 $$
 
 ## 定积分
@@ -630,7 +603,7 @@ $$
 效果：
 
 $$
-\int_a^b f(x)\,dx
+\int_a^b f(x),dx
 $$
 
 ## 二重积分
@@ -642,7 +615,7 @@ $$
 效果：
 
 $$
-\iint_D f(x,y)\,dx\,dy
+\iint_D f(x,y),dx,dy
 $$
 
 ## 三重积分
@@ -654,7 +627,7 @@ $$
 效果：
 
 $$
-\iiint_V f(x,y,z)\,dV
+\iiint_V f(x,y,z),dV
 $$
 
 ## 环路积分
@@ -684,9 +657,6 @@ $$
 \lim_{x\to0}f(x),\qquad \lim_{x\to0^+}f(x),\qquad \lim_{x\to0^-}f(x),\qquad \lim_{n\to\infty}a_n
 $$
 
-
-
-
 # 9. 关系符号
 
 | 代码 | 渲染 | 含义 |
@@ -696,7 +666,7 @@ $$
 | `=` | = | 等于 |
 | `\le` | \le | 小于等于 |
 | `\ge` | \ge | 大于等于 |
-| `\neq` | \neq | 不等于 |
+| \`\neq\` | eq | 不等于 |
 | `\approx` | \approx | 约等于 |
 | `\equiv` | \equiv | 恒等 / 同余 |
 | `\sim` | \sim | 相似 / 渐近 / 服从 |
@@ -706,9 +676,6 @@ $$
 | `\ll` | \ll | 远小于 |
 | `\gg` | \gg | 远大于 |
 
-
-
-
 # 10. 集合
 
 ## 集合关系
@@ -716,8 +683,8 @@ $$
 | 代码 | 渲染 | 含义 |
 | --- | --- | --- |
 | `\in` | \in | 属于 |
-| `\notin` | \notin | 不属于 |
-| `\ni` | \ni | 包含某元素 |
+| \`\notin\` | otin | 不属于 |
+| \`\ni\` | i | 包含某元素 |
 | `\subset` | \subset | 真子集 |
 | `\subseteq` | \subseteq | 子集 |
 | `\supset` | \supset | 真超集 |
@@ -746,7 +713,7 @@ A=\{x\in\mathbb{R}\mid x>0\}
 效果：
 
 $$
-A=\{x\in\mathbb{R}\mid x>0\}
+A={x\in\mathbb{R}\mid x>0}
 $$
 
 ## 区间
@@ -766,9 +733,6 @@ $$
 (a,b),\quad [a,b],\quad (a,b],\quad [a,b),\quad (-\infty,a],\quad [a,\infty)
 $$
 
-
-
-
 # 11. 逻辑与箭头
 
 ## 逻辑符号
@@ -777,8 +741,8 @@ $$
 | --- | --- | --- |
 | `\forall` | \forall | 任意 |
 | `\exists` | \exists | 存在 |
-| `\nexists` | \nexists | 不存在 |
-| `\neg` | \neg | 非 |
+| \`\nexists\` | exists | 不存在 |
+| \`\neg\` | eg | 非 |
 | `\land` | \land | 且 |
 | `\lor` | \lor | 或 |
 
@@ -803,7 +767,7 @@ $$
 | `\mapsto` | \mapsto |
 | `\uparrow` | \uparrow |
 | `\downarrow` | \downarrow |
-| `\nearrow` | \nearrow |
+| \`\nearrow\` | earrow |
 | `\searrow` | \searrow |
 
 函数映射：
@@ -828,9 +792,6 @@ $$
 x\mapsto x^2
 $$
 
-
-
-
 # 12. 常见运算符号
 
 | 代码 | 渲染 |
@@ -844,9 +805,6 @@ $$
 | `\cdot` | \cdot |
 | `\ast` | \ast |
 | `\circ` | \circ |
-
-
-
 
 # 13. 省略号
 
@@ -869,9 +827,6 @@ x_1,x_2,\dots,x_n
 $$
 x_1,x_2,\dots,x_n
 $$
-
-
-
 
 # 14. 常用函数
 
@@ -914,9 +869,6 @@ $$
 \operatorname{rank}(A),\qquad \operatorname{diag}(A),\qquad \operatorname{tr}(A),\qquad \operatorname{Var}(X),\qquad \operatorname{Cov}(X,Y)
 $$
 
-
-
-
 # 15. 最大值、最小值、argmax 与 argmin
 
 ```plain
@@ -941,7 +893,7 @@ $$
 效果：
 
 $$
-\operatorname\*{arg\,max}_{x\in A}f(x)
+\operatorname\*{arg,max}_{x\in A}f(x)
 $$
 
 ## argmin
@@ -953,7 +905,7 @@ $$
 效果：
 
 $$
-\operatorname\*{arg\,min}_{x\in A}f(x)
+\operatorname\*{arg,min}_{x\in A}f(x)
 $$
 
 正式文档可以定义：
@@ -968,9 +920,6 @@ $$
 ```plain
 \argmax_{\theta}L(\theta)
 ```
-
-
-
 
 # 16. 微积分
 
@@ -1012,7 +961,7 @@ $$
 效果：
 
 $$
-\frac{\partial f}{\partial x},\qquad \frac{\partial^2f}{\partial x^2},\qquad \frac{\partial^2f}{\partial x\,\partial y}
+\frac{\partial f}{\partial x},\qquad \frac{\partial^2f}{\partial x^2},\qquad \frac{\partial^2f}{\partial x,\partial y}
 $$
 
 ## 梯度
@@ -1039,7 +988,7 @@ $$
 效果：
 
 $$
-\nabla f(x,y) = \begin{pmatrix} \frac{\partial f}{\partial x}\\ \frac{\partial f}{\partial y} \end{pmatrix}
+\nabla f(x,y) = 
 $$
 
 ## 拉普拉斯算子
@@ -1057,9 +1006,6 @@ $$
 $$
 \nabla^2f = \frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2}
 $$
-
-
-
 
 # 17. 向量与矩阵
 
@@ -1130,9 +1076,6 @@ $$
 \langle x,y\rangle
 $$
 
-
-
-
 # 18. 矩阵环境
 
 ## 圆括号矩阵
@@ -1148,7 +1091,7 @@ A=
 效果：
 
 $$
-A= \begin{pmatrix} 1 & 2\\ 3 & 4 \end{pmatrix}
+A= 
 $$
 
 ## 方括号矩阵
@@ -1164,7 +1107,7 @@ A=
 效果：
 
 $$
-A= \begin{bmatrix} 1 & 2\\ 3 & 4 \end{bmatrix}
+A= 
 $$
 
 ## 不同矩阵环境
@@ -1185,9 +1128,6 @@ $$
 \  % 换行
 ```
 
-
-
-
 # 19. 行列式与一般矩阵
 
 ## 行列式
@@ -1202,7 +1142,7 @@ c & d
 效果：
 
 $$
-\begin{vmatrix} a & b\\ c & d \end{vmatrix}
+\begin{vmatrix} a & b\ c & d \end{vmatrix}
 $$
 
 也可以：
@@ -1231,7 +1171,7 @@ a_{m1} & \cdots & a_{mn}
 效果：
 
 $$
-A= \begin{pmatrix} a_{11} & \cdots & a_{1n}\\ \vdots & \ddots & \vdots\\ a_{m1} & \cdots & a_{mn} \end{pmatrix}
+A= 
 $$
 
 ## 列向量
@@ -1250,11 +1190,8 @@ x_n
 效果：
 
 $$
-\mathbf{x} = \begin{pmatrix} x_1\\ x_2\\ \vdots\\ x_n \end{pmatrix}
+\mathbf{x} = 
 $$
-
-
-
 
 # 20. 矩阵操作
 
@@ -1320,9 +1257,6 @@ $$
 \det(A-\lambda I)=0
 $$
 
-
-
-
 # 21. 多行公式
 
 ## align
@@ -1375,11 +1309,8 @@ $$
 效果：
 
 $$
-\begin{aligned} f(x) &=(x+1)^2\\ &=x^2+2x+1 \end{aligned}
+\begin{aligned} f(x) &=(x+1)^2\ &=x^2+2x+1 \end{aligned}
 $$
-
-
-
 
 # 22. 修饰符
 
@@ -1394,9 +1325,6 @@ $$
 | `\vec{x}` | \vec{x} |
 | `\dot{x}` | \dot{x} |
 | `\ddot{x}` | \ddot{x} |
-
-
-
 
 # 23. 概率统计
 
@@ -1578,9 +1506,6 @@ $$
 \rho_{XY} = \frac{ \operatorname{Cov}(X,Y) }{ \sigma_X\sigma_Y }
 $$
 
-
-
-
 # 24. 组合数学与数论
 
 ## 二项式系数
@@ -1671,9 +1596,6 @@ $$
 \gcd(a,b)
 $$
 
-
-
-
 # 25. 取整
 
 ## 向下取整
@@ -1699,9 +1621,6 @@ $$
 $$
 \lceil x\rceil
 $$
-
-
-
 
 # 26. 复数
 
@@ -1783,9 +1702,6 @@ $$
 \bar{z},\qquad \overline{z_1+z_2}
 $$
 
-
-
-
 # 27. 数学中的文字与空格
 
 ## 数学模式中的文字
@@ -1833,9 +1749,6 @@ $$
 \int f(x)\,dx
 ```
 
-
-
-
 # 28. 数学字体
 
 | 代码 | 渲染 | 常见用途 |
@@ -1848,9 +1761,6 @@ $$
 | `\mathfrak{g}` | \mathfrak{g} | Fraktur |
 | `\mathsf{ABC}` | \mathsf{ABC} | 无衬线 |
 | `\mathtt{ABC}` | \mathtt{ABC} | 打字机字体 |
-
-
-
 
 # 29. 上方与下方说明
 
@@ -1903,9 +1813,6 @@ b
 $$
 a \overset{\text{def}}{=} b
 $$
-
-
-
 
 # 30. 常见数学公式模板
 
@@ -1970,9 +1877,6 @@ $$
 f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(0)} {n!} x^n
 $$
 
-
-
-
 # 31. 常见函数展开
 
 ## 指数函数
@@ -2024,9 +1928,6 @@ $$
 \cos x = \sum_{n=0}^{\infty} (-1)^n \frac{x^{2n}} {(2n)!}
 $$
 
-
-
-
 # 32. 渐近分析
 
 ```plain
@@ -2040,9 +1941,6 @@ f(x)=o(g(x))
 $$
 f(x)\sim g(x),\qquad f(x)=O(g(x)),\qquad f(x)=o(g(x))
 $$
-
-
-
 
 # 33. 线性回归
 
@@ -2097,7 +1995,7 @@ $$
 效果：
 
 $$
-\hat{\boldsymbol{\beta}} = \operatorname\*{arg\,min}_{\boldsymbol{\beta}} \left\| \mathbf{y} - \mathbf{X}\boldsymbol{\beta} \right\|_2^2
+\hat{\boldsymbol{\beta}} = \operatorname\*{arg,min}_{\boldsymbol{\beta}} \left| \mathbf{y} - \mathbf{X}\boldsymbol{\beta} \right|_2^2
 $$
 
 ## 最小二乘闭式解
@@ -2114,9 +2012,6 @@ $$
 $$
 \hat{\boldsymbol{\beta}} = (\mathbf{X}^{\mathsf T}\mathbf{X})^{-1} \mathbf{X}^{\mathsf T}\mathbf{y}
 $$
-
-
-
 
 # 34. 公式编号与引用
 
@@ -2140,7 +2035,7 @@ E=mc^2
 ## 引用
 
 ```plain
-由式~\eqref{eq:energy} 可知……
+由式~
 ```
 
 ## 多行分别编号
@@ -2161,9 +2056,6 @@ E=mc^2
 \end{equation}
 ```
 
-
-
-
 # 35. 章节结构
 
 ```plain
@@ -2180,9 +2072,6 @@ E=mc^2
 \subsubsection{参数估计}
 ```
 
-
-
-
 # 36. 单位与特殊字符
 
 ## 单位
@@ -2196,7 +2085,7 @@ E=mc^2
 效果：
 
 $$
-10\,\mathrm{kg},\qquad 20\,\mathrm{m/s},\qquad 30^\circ\mathrm{C}
+10,\mathrm{kg},\qquad 20,\mathrm{m/s},\qquad 30^\circ\mathrm{C}
 $$
 
 ## 百分号
@@ -2208,7 +2097,7 @@ $$
 效果：
 
 $$
-50\%
+50%
 $$
 
 ## 常见特殊字符转义
@@ -2223,15 +2112,12 @@ $$
 | `{` | `\{` |
 | `}` | `\}` |
 
-
-
-
 # 37. Jupyter / Markdown
 
 ## 行内公式
 
 ```plain
-这是一个行内公式：$f(x)=x^2$。
+这是一个行内公式：
 ```
 
 ## 独立公式
@@ -2253,9 +2139,6 @@ f(x)
 \end{aligned}
 $$
 ```
-
-
-
 
 # 38. 中文 LaTeX 最小模板
 
@@ -2305,9 +2188,6 @@ A=
 \end{document}
 ```
 
-
-
-
 # 39. 常用数学宏包
 
 ```plain
@@ -2325,9 +2205,6 @@ A=
 | `amsfonts` | `\mathbb` 等数学字体 |
 | `bm` | 数学粗体 |
 | `mathtools` | 增强 `amsmath` |
-
-
-
 
 # 40. 常见错误
 
@@ -2409,11 +2286,8 @@ $x>0 时函数递增$
 推荐：
 
 ```plain
-当 $x>0$ 时，函数递增。
+当 
 ```
-
-
-
 
 # 41. 一页式超级速查
 
