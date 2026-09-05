@@ -12,6 +12,9 @@ cover: null
 > 看效果 → 找代码 → 复制修改。  
 > 面向数学学习、Jupyter Notebook、Markdown、Hugo 博客与科研写作的 LaTeX 数学公式速查表。
 
+
+
+
 # 0. 最常用结构
 
 ## 上下标
@@ -76,7 +79,7 @@ $$
 效果：
 
 $$
-\int_a^b f(x),dx
+\int_a^b f(x)\,dx
 $$
 
 ## 极限
@@ -116,8 +119,11 @@ $$
 效果：
 
 $$
-f(x)= 
+f(x)= \begin{cases} x^2, & x\ge0,\\ -x, & x<0. \end{cases}
 $$
+
+
+
 
 # 1. 公式模式
 
@@ -126,7 +132,7 @@ $$
 源码：
 
 ```plain
-函数 
+函数 $f(x)=x^2$ 在 $x=0$ 处取得最小值。
 ```
 
 效果：
@@ -164,6 +170,9 @@ f(x)=x^2
 f(x)=x^2
 \end{equation}
 ```
+
+
+
 
 # 2. 上标与下标
 
@@ -212,6 +221,9 @@ x_i^2,\qquad x_{ij}^{(k)},\qquad a_n^{m+1}
 $$
 
 > 多字符上下标建议始终使用 `{}`，例如 `x^{10}`、`x_{10}`。
+
+
+
 
 # 3. 分数
 
@@ -284,8 +296,11 @@ $$
 效果：
 
 $$
-\frac{\partial^2 f}{\partial x,\partial y}
+\frac{\partial^2 f}{\partial x\,\partial y}
 $$
+
+
+
 
 # 4. 根号
 
@@ -302,6 +317,9 @@ $$
 \sqrt{x},\qquad \sqrt{x^2+y^2},\qquad \sqrt[n]{x},\qquad \sqrt[3]{8}
 $$
 
+
+
+
 # 5. 括号与定界符
 
 ## 普通括号
@@ -315,7 +333,7 @@ $$
 效果：
 
 $$
-(a+b),\qquad [a+b],\qquad {a+b}
+(a+b),\qquad [a+b],\qquad \{a+b\}
 $$
 
 ## 自动调整大小
@@ -351,7 +369,7 @@ $$
 效果：
 
 $$
-\left{ \frac{x+1}{x-1} \right}
+\left\{ \frac{x+1}{x-1} \right\}
 $$
 
 ## 绝对值
@@ -397,6 +415,9 @@ $$
 
 `.` 表示不可见定界符。
 
+
+
+
 # 6. 分段函数与方程组
 
 ## 分段函数
@@ -412,7 +433,7 @@ x^2, & x\ge0,\
 效果：
 
 $$
-f(x)= 
+f(x)= \begin{cases} x^2, & x\ge0,\\ -x, & x<0. \end{cases}
 $$
 
 ## 三段函数
@@ -429,7 +450,7 @@ f(x)=
 效果：
 
 $$
-f(x)= 
+f(x)= \begin{cases} -1, & x<0,\\ 0, & x=0,\\ 1, & x>0. \end{cases}
 $$
 
 ## 方程组
@@ -444,7 +465,7 @@ x+y=3,\
 效果：
 
 $$
-\begin{cases} x+y=3,\ 2x-y=0. \end{cases}
+\begin{cases} x+y=3,\\ 2x-y=0. \end{cases}
 $$
 
 ## 带文字说明
@@ -459,60 +480,577 @@ x+y=3, & \text{第一式},\
 效果：
 
 $$
-\begin{cases} x+y=3, & \text{第一式},\ 2x-y=0, & \text{第二式}. \end{cases}
+\begin{cases} x+y=3, & \text{第一式},\\ 2x-y=0, & \text{第二式}. \end{cases}
 $$
+
+
+
 
 # 7. 希腊字母
 
 ## 小写希腊字母
 
-| 名称 | 代码 | 渲染 |
-| --- | --- | --- |
-| alpha | `\alpha` | \alpha |
-| beta | `\beta` | \beta |
-| gamma | `\gamma` | \gamma |
-| delta | `\delta` | \delta |
-| epsilon | `\epsilon` | \epsilon |
-| varepsilon | `\varepsilon` | \varepsilon |
-| zeta | `\zeta` | \zeta |
-| eta | `\eta` | \eta |
-| theta | `\theta` | \theta |
-| vartheta | `\vartheta` | \vartheta |
-| iota | `\iota` | \iota |
-| kappa | `\kappa` | \kappa |
-| lambda | `\lambda` | \lambda |
-| mu | `\mu` | \mu |
-| nu | \`\nu\` | u |
-| xi | `\xi` | \xi |
-| pi | `\pi` | \pi |
-| varpi | `\varpi` | \varpi |
-| rho | `\rho` | \rho |
-| varrho | `\varrho` | \varrho |
-| sigma | `\sigma` | \sigma |
-| varsigma | `\varsigma` | \varsigma |
-| tau | `\tau` | \tau |
-| upsilon | `\upsilon` | \upsilon |
-| phi | `\phi` | \phi |
-| varphi | `\varphi` | \varphi |
-| chi | `\chi` | \chi |
-| psi | `\psi` | \psi |
-| omega | `\omega` | \omega |
+### alpha
+
+代码：
+
+```plain
+\alpha
+```
+
+效果：
+
+$$
+\alpha
+$$
+
+### beta
+
+代码：
+
+```plain
+\beta
+```
+
+效果：
+
+$$
+\beta
+$$
+
+### gamma
+
+代码：
+
+```plain
+\gamma
+```
+
+效果：
+
+$$
+\gamma
+$$
+
+### delta
+
+代码：
+
+```plain
+\delta
+```
+
+效果：
+
+$$
+\delta
+$$
+
+### epsilon
+
+代码：
+
+```plain
+\epsilon
+```
+
+效果：
+
+$$
+\epsilon
+$$
+
+### varepsilon
+
+代码：
+
+```plain
+\varepsilon
+```
+
+效果：
+
+$$
+\varepsilon
+$$
+
+### zeta
+
+代码：
+
+```plain
+\zeta
+```
+
+效果：
+
+$$
+\zeta
+$$
+
+### eta
+
+代码：
+
+```plain
+\eta
+```
+
+效果：
+
+$$
+\eta
+$$
+
+### theta
+
+代码：
+
+```plain
+\theta
+```
+
+效果：
+
+$$
+\theta
+$$
+
+### vartheta
+
+代码：
+
+```plain
+\vartheta
+```
+
+效果：
+
+$$
+\vartheta
+$$
+
+### iota
+
+代码：
+
+```plain
+\iota
+```
+
+效果：
+
+$$
+\iota
+$$
+
+### kappa
+
+代码：
+
+```plain
+\kappa
+```
+
+效果：
+
+$$
+\kappa
+$$
+
+### lambda
+
+代码：
+
+```plain
+\lambda
+```
+
+效果：
+
+$$
+\lambda
+$$
+
+### mu
+
+代码：
+
+```plain
+\mu
+```
+
+效果：
+
+$$
+\mu
+$$
+
+### nu
+
+代码：
+
+```plain
+\nu
+```
+
+效果：
+
+$$
+\nu
+$$
+
+### xi
+
+代码：
+
+```plain
+\xi
+```
+
+效果：
+
+$$
+\xi
+$$
+
+### pi
+
+代码：
+
+```plain
+\pi
+```
+
+效果：
+
+$$
+\pi
+$$
+
+### varpi
+
+代码：
+
+```plain
+\varpi
+```
+
+效果：
+
+$$
+\varpi
+$$
+
+### rho
+
+代码：
+
+```plain
+\rho
+```
+
+效果：
+
+$$
+\rho
+$$
+
+### varrho
+
+代码：
+
+```plain
+\varrho
+```
+
+效果：
+
+$$
+\varrho
+$$
+
+### sigma
+
+代码：
+
+```plain
+\sigma
+```
+
+效果：
+
+$$
+\sigma
+$$
+
+### varsigma
+
+代码：
+
+```plain
+\varsigma
+```
+
+效果：
+
+$$
+\varsigma
+$$
+
+### tau
+
+代码：
+
+```plain
+\tau
+```
+
+效果：
+
+$$
+\tau
+$$
+
+### upsilon
+
+代码：
+
+```plain
+\upsilon
+```
+
+效果：
+
+$$
+\upsilon
+$$
+
+### phi
+
+代码：
+
+```plain
+\phi
+```
+
+效果：
+
+$$
+\phi
+$$
+
+### varphi
+
+代码：
+
+```plain
+\varphi
+```
+
+效果：
+
+$$
+\varphi
+$$
+
+### chi
+
+代码：
+
+```plain
+\chi
+```
+
+效果：
+
+$$
+\chi
+$$
+
+### psi
+
+代码：
+
+```plain
+\psi
+```
+
+效果：
+
+$$
+\psi
+$$
+
+### omega
+
+代码：
+
+```plain
+\omega
+```
+
+效果：
+
+$$
+\omega
+$$
 
 ## 大写希腊字母
 
-| 名称 | 代码 | 渲染 |
-| --- | --- | --- |
-| Gamma | `\Gamma` | \Gamma |
-| Delta | `\Delta` | \Delta |
-| Theta | `\Theta` | \Theta |
-| Lambda | `\Lambda` | \Lambda |
-| Xi | `\Xi` | \Xi |
-| Pi | `\Pi` | \Pi |
-| Sigma | `\Sigma` | \Sigma |
-| Upsilon | `\Upsilon` | \Upsilon |
-| Phi | `\Phi` | \Phi |
-| Psi | `\Psi` | \Psi |
-| Omega | `\Omega` | \Omega |
+### Gamma
+
+代码：
+
+```plain
+\Gamma
+```
+
+效果：
+
+$$
+\Gamma
+$$
+
+### Delta
+
+代码：
+
+```plain
+\Delta
+```
+
+效果：
+
+$$
+\Delta
+$$
+
+### Theta
+
+代码：
+
+```plain
+\Theta
+```
+
+效果：
+
+$$
+\Theta
+$$
+
+### Lambda
+
+代码：
+
+```plain
+\Lambda
+```
+
+效果：
+
+$$
+\Lambda
+$$
+
+### Xi
+
+代码：
+
+```plain
+\Xi
+```
+
+效果：
+
+$$
+\Xi
+$$
+
+### Pi
+
+代码：
+
+```plain
+\Pi
+```
+
+效果：
+
+$$
+\Pi
+$$
+
+### Sigma
+
+代码：
+
+```plain
+\Sigma
+```
+
+效果：
+
+$$
+\Sigma
+$$
+
+### Upsilon
+
+代码：
+
+```plain
+\Upsilon
+```
+
+效果：
+
+$$
+\Upsilon
+$$
+
+### Phi
+
+代码：
+
+```plain
+\Phi
+```
+
+效果：
+
+$$
+\Phi
+$$
+
+### Psi
+
+代码：
+
+```plain
+\Psi
+```
+
+效果：
+
+$$
+\Psi
+$$
+
+### Omega
+
+代码：
+
+```plain
+\Omega
+```
+
+效果：
+
+$$
+\Omega
+$$
 
 部分大写希腊字母与拉丁字母外形相同，通常直接输入：
 
@@ -531,6 +1069,9 @@ $$
 | Rho | `P` |
 | Tau | `T` |
 | Chi | `X` |
+
+
+
 
 # 8. 求和、连乘、积分与极限
 
@@ -591,7 +1132,7 @@ $$
 效果：
 
 $$
-\int f(x),dx
+\int f(x)\,dx
 $$
 
 ## 定积分
@@ -603,7 +1144,7 @@ $$
 效果：
 
 $$
-\int_a^b f(x),dx
+\int_a^b f(x)\,dx
 $$
 
 ## 二重积分
@@ -615,7 +1156,7 @@ $$
 效果：
 
 $$
-\iint_D f(x,y),dx,dy
+\iint_D f(x,y)\,dx\,dy
 $$
 
 ## 三重积分
@@ -627,7 +1168,7 @@ $$
 效果：
 
 $$
-\iiint_V f(x,y,z),dV
+\iiint_V f(x,y,z)\,dV
 $$
 
 ## 环路积分
@@ -657,52 +1198,499 @@ $$
 \lim_{x\to0}f(x),\qquad \lim_{x\to0^+}f(x),\qquad \lim_{x\to0^-}f(x),\qquad \lim_{n\to\infty}a_n
 $$
 
+
+
+
 # 9. 关系符号
 
-| 代码 | 渲染 | 含义 |
-| --- | --- | --- |
-| `<` | < | 小于 |
-| `>` | > | 大于 |
-| `=` | = | 等于 |
-| `\le` | \le | 小于等于 |
-| `\ge` | \ge | 大于等于 |
-| \`\neq\` | eq | 不等于 |
-| `\approx` | \approx | 约等于 |
-| `\equiv` | \equiv | 恒等 / 同余 |
-| `\sim` | \sim | 相似 / 渐近 / 服从 |
-| `\simeq` | \simeq | 近似 |
-| `\cong` | \cong | 全等 / 同构 |
-| `\propto` | \propto | 正比于 |
-| `\ll` | \ll | 远小于 |
-| `\gg` | \gg | 远大于 |
+### <
+
+代码：
+
+```plain
+<
+```
+
+含义：小于
+
+效果：
+
+$$
+<
+$$
+
+### >
+
+代码：
+
+```plain
+>
+```
+
+含义：大于
+
+效果：
+
+$$
+>
+$$
+
+### =
+
+代码：
+
+```plain
+=
+```
+
+含义：等于
+
+效果：
+
+$$
+=
+$$
+
+### \le
+
+代码：
+
+```plain
+\le
+```
+
+含义：小于等于
+
+效果：
+
+$$
+\le
+$$
+
+### \ge
+
+代码：
+
+```plain
+\ge
+```
+
+含义：大于等于
+
+效果：
+
+$$
+\ge
+$$
+
+### \neq
+
+代码：
+
+```plain
+\neq
+```
+
+含义：不等于
+
+效果：
+
+$$
+\neq
+$$
+
+### \approx
+
+代码：
+
+```plain
+\approx
+```
+
+含义：约等于
+
+效果：
+
+$$
+\approx
+$$
+
+### \equiv
+
+代码：
+
+```plain
+\equiv
+```
+
+含义：恒等 / 同余
+
+效果：
+
+$$
+\equiv
+$$
+
+### \sim
+
+代码：
+
+```plain
+\sim
+```
+
+含义：相似 / 渐近 / 服从
+
+效果：
+
+$$
+\sim
+$$
+
+### \simeq
+
+代码：
+
+```plain
+\simeq
+```
+
+含义：近似
+
+效果：
+
+$$
+\simeq
+$$
+
+### \cong
+
+代码：
+
+```plain
+\cong
+```
+
+含义：全等 / 同构
+
+效果：
+
+$$
+\cong
+$$
+
+### \propto
+
+代码：
+
+```plain
+\propto
+```
+
+含义：正比于
+
+效果：
+
+$$
+\propto
+$$
+
+### \ll
+
+代码：
+
+```plain
+\ll
+```
+
+含义：远小于
+
+效果：
+
+$$
+\ll
+$$
+
+### \gg
+
+代码：
+
+```plain
+\gg
+```
+
+含义：远大于
+
+效果：
+
+$$
+\gg
+$$
+
+
+
 
 # 10. 集合
 
 ## 集合关系
 
-| 代码 | 渲染 | 含义 |
-| --- | --- | --- |
-| `\in` | \in | 属于 |
-| \`\notin\` | otin | 不属于 |
-| \`\ni\` | i | 包含某元素 |
-| `\subset` | \subset | 真子集 |
-| `\subseteq` | \subseteq | 子集 |
-| `\supset` | \supset | 真超集 |
-| `\supseteq` | \supseteq | 超集 |
-| `\cup` | \cup | 并集 |
-| `\cap` | \cap | 交集 |
-| `\setminus` | \setminus | 集合差 |
-| `\varnothing` | \varnothing | 空集 |
+### \in
+
+代码：
+
+```plain
+\in
+```
+
+含义：属于
+
+效果：
+
+$$
+\in
+$$
+
+### \notin
+
+代码：
+
+```plain
+\notin
+```
+
+含义：不属于
+
+效果：
+
+$$
+\notin
+$$
+
+### \ni
+
+代码：
+
+```plain
+\ni
+```
+
+含义：包含某元素
+
+效果：
+
+$$
+\ni
+$$
+
+### \subset
+
+代码：
+
+```plain
+\subset
+```
+
+含义：真子集
+
+效果：
+
+$$
+\subset
+$$
+
+### \subseteq
+
+代码：
+
+```plain
+\subseteq
+```
+
+含义：子集
+
+效果：
+
+$$
+\subseteq
+$$
+
+### \supset
+
+代码：
+
+```plain
+\supset
+```
+
+含义：真超集
+
+效果：
+
+$$
+\supset
+$$
+
+### \supseteq
+
+代码：
+
+```plain
+\supseteq
+```
+
+含义：超集
+
+效果：
+
+$$
+\supseteq
+$$
+
+### \cup
+
+代码：
+
+```plain
+\cup
+```
+
+含义：并集
+
+效果：
+
+$$
+\cup
+$$
+
+### \cap
+
+代码：
+
+```plain
+\cap
+```
+
+含义：交集
+
+效果：
+
+$$
+\cap
+$$
+
+### \setminus
+
+代码：
+
+```plain
+\setminus
+```
+
+含义：集合差
+
+效果：
+
+$$
+\setminus
+$$
+
+### \varnothing
+
+代码：
+
+```plain
+\varnothing
+```
+
+含义：空集
+
+效果：
+
+$$
+\varnothing
+$$
 
 ## 常用数集
 
-| 代码 | 渲染 | 含义 |
-| --- | --- | --- |
-| `\mathbb{N}` | \mathbb{N} | 自然数 |
-| `\mathbb{Z}` | \mathbb{Z} | 整数 |
-| `\mathbb{Q}` | \mathbb{Q} | 有理数 |
-| `\mathbb{R}` | \mathbb{R} | 实数 |
-| `\mathbb{C}` | \mathbb{C} | 复数 |
+### \mathbb{N}
+
+代码：
+
+```plain
+\mathbb{N}
+```
+
+含义：自然数
+
+效果：
+
+$$
+\mathbb{N}
+$$
+
+### \mathbb{Z}
+
+代码：
+
+```plain
+\mathbb{Z}
+```
+
+含义：整数
+
+效果：
+
+$$
+\mathbb{Z}
+$$
+
+### \mathbb{Q}
+
+代码：
+
+```plain
+\mathbb{Q}
+```
+
+含义：有理数
+
+效果：
+
+$$
+\mathbb{Q}
+$$
+
+### \mathbb{R}
+
+代码：
+
+```plain
+\mathbb{R}
+```
+
+含义：实数
+
+效果：
+
+$$
+\mathbb{R}
+$$
+
+### \mathbb{C}
+
+代码：
+
+```plain
+\mathbb{C}
+```
+
+含义：复数
+
+效果：
+
+$$
+\mathbb{C}
+$$
 
 ## 集合描述法
 
@@ -713,7 +1701,7 @@ A=\{x\in\mathbb{R}\mid x>0\}
 效果：
 
 $$
-A={x\in\mathbb{R}\mid x>0}
+A=\{x\in\mathbb{R}\mid x>0\}
 $$
 
 ## 区间
@@ -733,42 +1721,318 @@ $$
 (a,b),\quad [a,b],\quad (a,b],\quad [a,b),\quad (-\infty,a],\quad [a,\infty)
 $$
 
+
+
+
 # 11. 逻辑与箭头
 
 ## 逻辑符号
 
-| 代码 | 渲染 | 含义 |
-| --- | --- | --- |
-| `\forall` | \forall | 任意 |
-| `\exists` | \exists | 存在 |
-| \`\nexists\` | exists | 不存在 |
-| \`\neg\` | eg | 非 |
-| `\land` | \land | 且 |
-| `\lor` | \lor | 或 |
+### \forall
+
+代码：
+
+```plain
+\forall
+```
+
+含义：任意
+
+效果：
+
+$$
+\forall
+$$
+
+### \exists
+
+代码：
+
+```plain
+\exists
+```
+
+含义：存在
+
+效果：
+
+$$
+\exists
+$$
+
+### \nexists
+
+代码：
+
+```plain
+\nexists
+```
+
+含义：不存在
+
+效果：
+
+$$
+\nexists
+$$
+
+### \neg
+
+代码：
+
+```plain
+\neg
+```
+
+含义：非
+
+效果：
+
+$$
+\neg
+$$
+
+### \land
+
+代码：
+
+```plain
+\land
+```
+
+含义：且
+
+效果：
+
+$$
+\land
+$$
+
+### \lor
+
+代码：
+
+```plain
+\lor
+```
+
+含义：或
+
+效果：
+
+$$
+\lor
+$$
 
 ## 蕴含与等价
 
-| 代码 | 渲染 | 含义 |
-| --- | --- | --- |
-| `\Rightarrow` | \Rightarrow | 推出 |
-| `\Leftarrow` | \Leftarrow | 由右推出左 |
-| `\Leftrightarrow` | \Leftrightarrow | 等价 |
-| `\implies` | \implies | 蕴含 |
-| `\iff` | \iff | 当且仅当 |
+### \Rightarrow
+
+代码：
+
+```plain
+\Rightarrow
+```
+
+含义：推出
+
+效果：
+
+$$
+\Rightarrow
+$$
+
+### \Leftarrow
+
+代码：
+
+```plain
+\Leftarrow
+```
+
+含义：由右推出左
+
+效果：
+
+$$
+\Leftarrow
+$$
+
+### \Leftrightarrow
+
+代码：
+
+```plain
+\Leftrightarrow
+```
+
+含义：等价
+
+效果：
+
+$$
+\Leftrightarrow
+$$
+
+### \implies
+
+代码：
+
+```plain
+\implies
+```
+
+含义：蕴含
+
+效果：
+
+$$
+\implies
+$$
+
+### \iff
+
+代码：
+
+```plain
+\iff
+```
+
+含义：当且仅当
+
+效果：
+
+$$
+\iff
+$$
 
 ## 箭头
 
-| 代码 | 渲染 |
-| --- | --- |
-| `\to` | \to |
-| `\rightarrow` | \rightarrow |
-| `\leftarrow` | \leftarrow |
-| `\leftrightarrow` | \leftrightarrow |
-| `\mapsto` | \mapsto |
-| `\uparrow` | \uparrow |
-| `\downarrow` | \downarrow |
-| \`\nearrow\` | earrow |
-| `\searrow` | \searrow |
+### \to
+
+代码：
+
+```plain
+\to
+```
+
+效果：
+
+$$
+\to
+$$
+
+### \rightarrow
+
+代码：
+
+```plain
+\rightarrow
+```
+
+效果：
+
+$$
+\rightarrow
+$$
+
+### \leftarrow
+
+代码：
+
+```plain
+\leftarrow
+```
+
+效果：
+
+$$
+\leftarrow
+$$
+
+### \leftrightarrow
+
+代码：
+
+```plain
+\leftrightarrow
+```
+
+效果：
+
+$$
+\leftrightarrow
+$$
+
+### \mapsto
+
+代码：
+
+```plain
+\mapsto
+```
+
+效果：
+
+$$
+\mapsto
+$$
+
+### \uparrow
+
+代码：
+
+```plain
+\uparrow
+```
+
+效果：
+
+$$
+\uparrow
+$$
+
+### \downarrow
+
+代码：
+
+```plain
+\downarrow
+```
+
+效果：
+
+$$
+\downarrow
+$$
+
+### \nearrow
+
+代码：
+
+```plain
+\nearrow
+```
+
+效果：
+
+$$
+\nearrow
+$$
+
+### \searrow
+
+代码：
+
+```plain
+\searrow
+```
+
+效果：
+
+$$
+\searrow
+$$
 
 函数映射：
 
@@ -792,29 +2056,221 @@ $$
 x\mapsto x^2
 $$
 
+
+
+
 # 12. 常见运算符号
 
-| 代码 | 渲染 |
-| --- | --- |
-| `+` | + |
-| `-` | - |
-| `\pm` | \pm |
-| `\mp` | \mp |
-| `\times` | \times |
-| `\div` | \div |
-| `\cdot` | \cdot |
-| `\ast` | \ast |
-| `\circ` | \circ |
+### +
+
+代码：
+
+```plain
++
+```
+
+效果：
+
+$$
++
+$$
+
+### -
+
+代码：
+
+```plain
+-
+```
+
+效果：
+
+$$
+-
+$$
+
+### \pm
+
+代码：
+
+```plain
+\pm
+```
+
+效果：
+
+$$
+\pm
+$$
+
+### \mp
+
+代码：
+
+```plain
+\mp
+```
+
+效果：
+
+$$
+\mp
+$$
+
+### \times
+
+代码：
+
+```plain
+\times
+```
+
+效果：
+
+$$
+\times
+$$
+
+### \div
+
+代码：
+
+```plain
+\div
+```
+
+效果：
+
+$$
+\div
+$$
+
+### \cdot
+
+代码：
+
+```plain
+\cdot
+```
+
+效果：
+
+$$
+\cdot
+$$
+
+### \ast
+
+代码：
+
+```plain
+\ast
+```
+
+效果：
+
+$$
+\ast
+$$
+
+### \circ
+
+代码：
+
+```plain
+\circ
+```
+
+效果：
+
+$$
+\circ
+$$
+
+
+
 
 # 13. 省略号
 
-| 代码 | 渲染 | 用途 |
-| --- | --- | --- |
-| `\dots` | \dots | 一般省略 |
-| `\ldots` | \ldots | 低位置横向省略 |
-| `\cdots` | \cdots | 居中横向省略 |
-| `\vdots` | \vdots | 纵向省略 |
-| `\ddots` | \ddots | 对角省略 |
+### \dots
+
+代码：
+
+```plain
+\dots
+```
+
+含义：一般省略
+
+效果：
+
+$$
+\dots
+$$
+
+### \ldots
+
+代码：
+
+```plain
+\ldots
+```
+
+含义：低位置横向省略
+
+效果：
+
+$$
+\ldots
+$$
+
+### \cdots
+
+代码：
+
+```plain
+\cdots
+```
+
+含义：居中横向省略
+
+效果：
+
+$$
+\cdots
+$$
+
+### \vdots
+
+代码：
+
+```plain
+\vdots
+```
+
+含义：纵向省略
+
+效果：
+
+$$
+\vdots
+$$
+
+### \ddots
+
+代码：
+
+```plain
+\ddots
+```
+
+含义：对角省略
+
+效果：
+
+$$
+\ddots
+$$
 
 示例：
 
@@ -828,30 +2284,264 @@ $$
 x_1,x_2,\dots,x_n
 $$
 
+
+
+
 # 14. 常用函数
 
 数学函数名推荐使用专用命令，而不是直接输入普通字母。
 
-| 代码 | 渲染 |
-| --- | --- |
-| `\sin x` | \sin x |
-| `\cos x` | \cos x |
-| `\tan x` | \tan x |
-| `\cot x` | \cot x |
-| `\sec x` | \sec x |
-| `\csc x` | \csc x |
-| `\arcsin x` | \arcsin x |
-| `\arccos x` | \arccos x |
-| `\arctan x` | \arctan x |
-| `\log x` | \log x |
-| `\ln x` | \ln x |
-| `\exp x` | \exp x |
-| `\max x` | \max x |
-| `\min x` | \min x |
-| `\sup x` | \sup x |
-| `\inf x` | \inf x |
-| `\det A` | \det A |
-| `\gcd(a,b)` | \gcd(a,b) |
+### \sin x
+
+代码：
+
+```plain
+\sin x
+```
+
+效果：
+
+$$
+\sin x
+$$
+
+### \cos x
+
+代码：
+
+```plain
+\cos x
+```
+
+效果：
+
+$$
+\cos x
+$$
+
+### \tan x
+
+代码：
+
+```plain
+\tan x
+```
+
+效果：
+
+$$
+\tan x
+$$
+
+### \cot x
+
+代码：
+
+```plain
+\cot x
+```
+
+效果：
+
+$$
+\cot x
+$$
+
+### \sec x
+
+代码：
+
+```plain
+\sec x
+```
+
+效果：
+
+$$
+\sec x
+$$
+
+### \csc x
+
+代码：
+
+```plain
+\csc x
+```
+
+效果：
+
+$$
+\csc x
+$$
+
+### \arcsin x
+
+代码：
+
+```plain
+\arcsin x
+```
+
+效果：
+
+$$
+\arcsin x
+$$
+
+### \arccos x
+
+代码：
+
+```plain
+\arccos x
+```
+
+效果：
+
+$$
+\arccos x
+$$
+
+### \arctan x
+
+代码：
+
+```plain
+\arctan x
+```
+
+效果：
+
+$$
+\arctan x
+$$
+
+### \log x
+
+代码：
+
+```plain
+\log x
+```
+
+效果：
+
+$$
+\log x
+$$
+
+### \ln x
+
+代码：
+
+```plain
+\ln x
+```
+
+效果：
+
+$$
+\ln x
+$$
+
+### \exp x
+
+代码：
+
+```plain
+\exp x
+```
+
+效果：
+
+$$
+\exp x
+$$
+
+### \max x
+
+代码：
+
+```plain
+\max x
+```
+
+效果：
+
+$$
+\max x
+$$
+
+### \min x
+
+代码：
+
+```plain
+\min x
+```
+
+效果：
+
+$$
+\min x
+$$
+
+### \sup x
+
+代码：
+
+```plain
+\sup x
+```
+
+效果：
+
+$$
+\sup x
+$$
+
+### \inf x
+
+代码：
+
+```plain
+\inf x
+```
+
+效果：
+
+$$
+\inf x
+$$
+
+### \det A
+
+代码：
+
+```plain
+\det A
+```
+
+效果：
+
+$$
+\det A
+$$
+
+### \gcd(a,b)
+
+代码：
+
+```plain
+\gcd(a,b)
+```
+
+效果：
+
+$$
+\gcd(a,b)
+$$
 
 ## 自定义函数名
 
@@ -868,6 +2558,9 @@ $$
 $$
 \operatorname{rank}(A),\qquad \operatorname{diag}(A),\qquad \operatorname{tr}(A),\qquad \operatorname{Var}(X),\qquad \operatorname{Cov}(X,Y)
 $$
+
+
+
 
 # 15. 最大值、最小值、argmax 与 argmin
 
@@ -893,7 +2586,7 @@ $$
 效果：
 
 $$
-\operatorname\*{arg,max}_{x\in A}f(x)
+\operatorname\*{arg\,max}_{x\in A}f(x)
 $$
 
 ## argmin
@@ -905,7 +2598,7 @@ $$
 效果：
 
 $$
-\operatorname\*{arg,min}_{x\in A}f(x)
+\operatorname\*{arg\,min}_{x\in A}f(x)
 $$
 
 正式文档可以定义：
@@ -920,6 +2613,9 @@ $$
 ```plain
 \argmax_{\theta}L(\theta)
 ```
+
+
+
 
 # 16. 微积分
 
@@ -961,7 +2657,7 @@ $$
 效果：
 
 $$
-\frac{\partial f}{\partial x},\qquad \frac{\partial^2f}{\partial x^2},\qquad \frac{\partial^2f}{\partial x,\partial y}
+\frac{\partial f}{\partial x},\qquad \frac{\partial^2f}{\partial x^2},\qquad \frac{\partial^2f}{\partial x\,\partial y}
 $$
 
 ## 梯度
@@ -988,7 +2684,7 @@ $$
 效果：
 
 $$
-\nabla f(x,y) = 
+\nabla f(x,y) = \begin{pmatrix} \frac{\partial f}{\partial x}\\ \frac{\partial f}{\partial y} \end{pmatrix}
 $$
 
 ## 拉普拉斯算子
@@ -1006,6 +2702,9 @@ $$
 $$
 \nabla^2f = \frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2}
 $$
+
+
+
 
 # 17. 向量与矩阵
 
@@ -1076,6 +2775,9 @@ $$
 \langle x,y\rangle
 $$
 
+
+
+
 # 18. 矩阵环境
 
 ## 圆括号矩阵
@@ -1091,7 +2793,7 @@ A=
 效果：
 
 $$
-A= 
+A= \begin{pmatrix} 1 & 2\\ 3 & 4 \end{pmatrix}
 $$
 
 ## 方括号矩阵
@@ -1107,7 +2809,7 @@ A=
 效果：
 
 $$
-A= 
+A= \begin{bmatrix} 1 & 2\\ 3 & 4 \end{bmatrix}
 $$
 
 ## 不同矩阵环境
@@ -1128,6 +2830,9 @@ $$
 \  % 换行
 ```
 
+
+
+
 # 19. 行列式与一般矩阵
 
 ## 行列式
@@ -1142,7 +2847,7 @@ c & d
 效果：
 
 $$
-\begin{vmatrix} a & b\ c & d \end{vmatrix}
+\begin{vmatrix} a & b\\ c & d \end{vmatrix}
 $$
 
 也可以：
@@ -1171,7 +2876,7 @@ a_{m1} & \cdots & a_{mn}
 效果：
 
 $$
-A= 
+A= \begin{pmatrix} a_{11} & \cdots & a_{1n}\\ \vdots & \ddots & \vdots\\ a_{m1} & \cdots & a_{mn} \end{pmatrix}
 $$
 
 ## 列向量
@@ -1190,8 +2895,11 @@ x_n
 效果：
 
 $$
-\mathbf{x} = 
+\mathbf{x} = \begin{pmatrix} x_1\\ x_2\\ \vdots\\ x_n \end{pmatrix}
 $$
+
+
+
 
 # 20. 矩阵操作
 
@@ -1257,6 +2965,9 @@ $$
 \det(A-\lambda I)=0
 $$
 
+
+
+
 # 21. 多行公式
 
 ## align
@@ -1309,22 +3020,142 @@ $$
 效果：
 
 $$
-\begin{aligned} f(x) &=(x+1)^2\ &=x^2+2x+1 \end{aligned}
+\begin{aligned} f(x) &=(x+1)^2\\ &=x^2+2x+1 \end{aligned}
 $$
+
+
+
 
 # 22. 修饰符
 
-| 代码 | 渲染 |
-| --- | --- |
-| `\bar{x}` | \bar{x} |
-| `\overline{AB}` | \overline{AB} |
-| `\hat{\theta}` | \hat{\theta} |
-| `\widehat{\theta}` | \widehat{\theta} |
-| `\tilde{x}` | \tilde{x} |
-| `\widetilde{ABC}` | \widetilde{ABC} |
-| `\vec{x}` | \vec{x} |
-| `\dot{x}` | \dot{x} |
-| `\ddot{x}` | \ddot{x} |
+### \bar{x}
+
+代码：
+
+```plain
+\bar{x}
+```
+
+效果：
+
+$$
+\bar{x}
+$$
+
+### \overline{AB}
+
+代码：
+
+```plain
+\overline{AB}
+```
+
+效果：
+
+$$
+\overline{AB}
+$$
+
+### \hat{\theta}
+
+代码：
+
+```plain
+\hat{\theta}
+```
+
+效果：
+
+$$
+\hat{\theta}
+$$
+
+### \widehat{\theta}
+
+代码：
+
+```plain
+\widehat{\theta}
+```
+
+效果：
+
+$$
+\widehat{\theta}
+$$
+
+### \tilde{x}
+
+代码：
+
+```plain
+\tilde{x}
+```
+
+效果：
+
+$$
+\tilde{x}
+$$
+
+### \widetilde{ABC}
+
+代码：
+
+```plain
+\widetilde{ABC}
+```
+
+效果：
+
+$$
+\widetilde{ABC}
+$$
+
+### \vec{x}
+
+代码：
+
+```plain
+\vec{x}
+```
+
+效果：
+
+$$
+\vec{x}
+$$
+
+### \dot{x}
+
+代码：
+
+```plain
+\dot{x}
+```
+
+效果：
+
+$$
+\dot{x}
+$$
+
+### \ddot{x}
+
+代码：
+
+```plain
+\ddot{x}
+```
+
+效果：
+
+$$
+\ddot{x}
+$$
+
+
+
 
 # 23. 概率统计
 
@@ -1506,6 +3337,9 @@ $$
 \rho_{XY} = \frac{ \operatorname{Cov}(X,Y) }{ \sigma_X\sigma_Y }
 $$
 
+
+
+
 # 24. 组合数学与数论
 
 ## 二项式系数
@@ -1596,6 +3430,9 @@ $$
 \gcd(a,b)
 $$
 
+
+
+
 # 25. 取整
 
 ## 向下取整
@@ -1621,6 +3458,9 @@ $$
 $$
 \lceil x\rceil
 $$
+
+
+
 
 # 26. 复数
 
@@ -1702,6 +3542,9 @@ $$
 \bar{z},\qquad \overline{z_1+z_2}
 $$
 
+
+
+
 # 27. 数学中的文字与空格
 
 ## 数学模式中的文字
@@ -1749,18 +3592,141 @@ $$
 \int f(x)\,dx
 ```
 
+
+
+
 # 28. 数学字体
 
-| 代码 | 渲染 | 常见用途 |
-| --- | --- | --- |
-| `x` | x | 普通变量 |
-| `\mathrm{ABC}` | \mathrm{ABC} | 正体 |
-| `\mathbf{x}` | \mathbf{x} | 粗体向量 |
-| `\mathbb{R}` | \mathbb{R} | 数集 |
-| `\mathcal{L}` | \mathcal{L} | 花体 |
-| `\mathfrak{g}` | \mathfrak{g} | Fraktur |
-| `\mathsf{ABC}` | \mathsf{ABC} | 无衬线 |
-| `\mathtt{ABC}` | \mathtt{ABC} | 打字机字体 |
+### x
+
+代码：
+
+```plain
+x
+```
+
+含义：普通变量
+
+效果：
+
+$$
+x
+$$
+
+### \mathrm{ABC}
+
+代码：
+
+```plain
+\mathrm{ABC}
+```
+
+含义：正体
+
+效果：
+
+$$
+\mathrm{ABC}
+$$
+
+### \mathbf{x}
+
+代码：
+
+```plain
+\mathbf{x}
+```
+
+含义：粗体向量
+
+效果：
+
+$$
+\mathbf{x}
+$$
+
+### \mathbb{R}
+
+代码：
+
+```plain
+\mathbb{R}
+```
+
+含义：数集
+
+效果：
+
+$$
+\mathbb{R}
+$$
+
+### \mathcal{L}
+
+代码：
+
+```plain
+\mathcal{L}
+```
+
+含义：花体
+
+效果：
+
+$$
+\mathcal{L}
+$$
+
+### \mathfrak{g}
+
+代码：
+
+```plain
+\mathfrak{g}
+```
+
+含义：Fraktur
+
+效果：
+
+$$
+\mathfrak{g}
+$$
+
+### \mathsf{ABC}
+
+代码：
+
+```plain
+\mathsf{ABC}
+```
+
+含义：无衬线
+
+效果：
+
+$$
+\mathsf{ABC}
+$$
+
+### \mathtt{ABC}
+
+代码：
+
+```plain
+\mathtt{ABC}
+```
+
+含义：打字机字体
+
+效果：
+
+$$
+\mathtt{ABC}
+$$
+
+
+
 
 # 29. 上方与下方说明
 
@@ -1813,6 +3779,9 @@ b
 $$
 a \overset{\text{def}}{=} b
 $$
+
+
+
 
 # 30. 常见数学公式模板
 
@@ -1877,6 +3846,9 @@ $$
 f(x) = \sum_{n=0}^{\infty} \frac{f^{(n)}(0)} {n!} x^n
 $$
 
+
+
+
 # 31. 常见函数展开
 
 ## 指数函数
@@ -1928,6 +3900,9 @@ $$
 \cos x = \sum_{n=0}^{\infty} (-1)^n \frac{x^{2n}} {(2n)!}
 $$
 
+
+
+
 # 32. 渐近分析
 
 ```plain
@@ -1941,6 +3916,9 @@ f(x)=o(g(x))
 $$
 f(x)\sim g(x),\qquad f(x)=O(g(x)),\qquad f(x)=o(g(x))
 $$
+
+
+
 
 # 33. 线性回归
 
@@ -1995,7 +3973,7 @@ $$
 效果：
 
 $$
-\hat{\boldsymbol{\beta}} = \operatorname\*{arg,min}_{\boldsymbol{\beta}} \left| \mathbf{y} - \mathbf{X}\boldsymbol{\beta} \right|_2^2
+\hat{\boldsymbol{\beta}} = \operatorname\*{arg\,min}_{\boldsymbol{\beta}} \left\| \mathbf{y} - \mathbf{X}\boldsymbol{\beta} \right\|_2^2
 $$
 
 ## 最小二乘闭式解
@@ -2012,6 +3990,9 @@ $$
 $$
 \hat{\boldsymbol{\beta}} = (\mathbf{X}^{\mathsf T}\mathbf{X})^{-1} \mathbf{X}^{\mathsf T}\mathbf{y}
 $$
+
+
+
 
 # 34. 公式编号与引用
 
@@ -2035,7 +4016,7 @@ E=mc^2
 ## 引用
 
 ```plain
-由式~
+由式~\eqref{eq:energy} 可知……
 ```
 
 ## 多行分别编号
@@ -2056,6 +4037,9 @@ E=mc^2
 \end{equation}
 ```
 
+
+
+
 # 35. 章节结构
 
 ```plain
@@ -2072,6 +4056,9 @@ E=mc^2
 \subsubsection{参数估计}
 ```
 
+
+
+
 # 36. 单位与特殊字符
 
 ## 单位
@@ -2085,7 +4072,7 @@ E=mc^2
 效果：
 
 $$
-10,\mathrm{kg},\qquad 20,\mathrm{m/s},\qquad 30^\circ\mathrm{C}
+10\,\mathrm{kg},\qquad 20\,\mathrm{m/s},\qquad 30^\circ\mathrm{C}
 $$
 
 ## 百分号
@@ -2097,27 +4084,34 @@ $$
 效果：
 
 $$
-50%
+50\%
 $$
 
 ## 常见特殊字符转义
 
-| 想显示 | 写法 |
-| --- | --- |
-| `%` | `\%` |
-| `$` | `\$` |
-| `&` | `\&` |
-| `_` | `_` |
-| `#` | `\#` |
-| `{` | `\{` |
-| `}` | `\}` |
+### %
+
+### $
+
+### &
+
+### _
+
+### #
+
+### {
+
+### }
+
+
+
 
 # 37. Jupyter / Markdown
 
 ## 行内公式
 
 ```plain
-这是一个行内公式：
+这是一个行内公式：$f(x)=x^2$。
 ```
 
 ## 独立公式
@@ -2139,6 +4133,9 @@ f(x)
 \end{aligned}
 $$
 ```
+
+
+
 
 # 38. 中文 LaTeX 最小模板
 
@@ -2188,6 +4185,9 @@ A=
 \end{document}
 ```
 
+
+
+
 # 39. 常用数学宏包
 
 ```plain
@@ -2205,6 +4205,9 @@ A=
 | `amsfonts` | `\mathbb` 等数学字体 |
 | `bm` | 数学粗体 |
 | `mathtools` | 增强 `amsmath` |
+
+
+
 
 # 40. 常见错误
 
@@ -2286,8 +4289,11 @@ $x>0 时函数递增$
 推荐：
 
 ```plain
-当 
+当 $x>0$ 时，函数递增。
 ```
+
+
+
 
 # 41. 一页式超级速查
 
