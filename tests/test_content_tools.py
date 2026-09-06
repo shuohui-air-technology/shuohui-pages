@@ -10,6 +10,8 @@ from scripts.content_tools import (
     parse_front_matter,
     validate_markdown_structure,
     validate_front_matter,
+    validate_heading_structure,
+    validate_math_structure,
     validate_files,
 )
 
@@ -162,6 +164,71 @@ class ContentToolsTests(unittest.TestCase):
         self.assertTrue(any("ordered list marker" in error for error in errors))
         self.assertTrue(any("standalone label" in error for error in errors))
         self.assertTrue(any("paragraph boundary" in error for error in errors))
+
+    def test_validate_math_structure_rejects_markdown_hostile_comparison_symbols(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\n"
+            "draft: false\nmath: true\ncomments: true\n---\n\n"
+            "效果：\n\n$$\n<\n$$\n\n$$\n>\n$$\n\n$$\n=\n$$\n\n$$\n-\n$$\n"
+        )
+
+        errors = validate_math_structure(source)
+
+        self.assertTrue(any("standalone < inside a math block" in error for error in errors))
+        self.assertTrue(any("standalone > inside a math block" in error for error in errors))
+        self.assertTrue(any("standalone = inside a math block" in error for error in errors))
+        self.assertTrue(any("standalone - inside a math block" in error for error in errors))
+
+    def test_validate_math_structure_ignores_fenced_examples_and_safe_symbols(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\n"
+            "draft: false\nmath: true\ncomments: true\n---\n\n"
+            "```plain\n<\n>\n```\n\n"
+            "$$\n\\mathord{<}\n\\mathord{>}\n\\mathord{=}\n\\mathord{-}\n$$\n"
+            "\n$$ < $$\n$$ > $$\n$$ = $$\n$$ - $$\n"
+        )
+
+        self.assertEqual(validate_math_structure(source), [])
+
+    def test_validate_math_structure_handles_fence_type_and_length(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\n"
+            "draft: false\nmath: true\ncomments: true\n---\n\n"
+            "````plain\n$$\n>\n$$\n```\n````\n\n"
+            "~~~plain\n$$\n=\n$$\n```\n~~~\n"
+        )
+
+        self.assertEqual(validate_math_structure(source), [])
+
+    def test_validate_math_structure_rejects_unclosed_block(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\n"
+            "draft: false\nmath: true\ncomments: true\n---\n\n$$\n"
+            "x^2\n"
+        )
+
+        errors = validate_math_structure(source)
+
+        self.assertTrue(any("unclosed math block" in error for error in errors))
+
+    def test_validate_heading_structure_rejects_literal_hash_heading(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\n"
+            "draft: false\nmath: true\ncomments: true\n---\n\n### #\n"
+        )
+
+        errors = validate_heading_structure(source)
+
+        self.assertTrue(any("empty heading" in error for error in errors))
+
+    def test_validate_heading_structure_ignores_fenced_hash_examples(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\n"
+            "draft: false\nmath: true\ncomments: true\n---\n\n"
+            "```plain\n### #\n```\n"
+        )
+
+        self.assertEqual(validate_heading_structure(source), [])
 
     def test_validate_front_matter_allows_section_index_without_date(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -22,6 +22,10 @@ HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
 LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]\s+|\d+[.)、]\s+)\S")
 MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)")
 COVER_IMAGE_RE = re.compile(r"^\s*image:\s*(.+?)\s*$")
+MATH_BLOCK_STARTS = {"$$": "$$", r"\[": r"\]"}
+UNSAFE_STANDALONE_MATH_SYMBOLS = {"<", ">", "=", "-"}
+FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+LITERAL_HASH_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+#+\s*$")
 
 
 def normalize_date_text(text: str) -> str:
@@ -220,6 +224,106 @@ def validate_markdown_structure(text: str) -> list[str]:
     return errors
 
 
+def validate_math_structure(text: str) -> list[str]:
+    """Reject Markdown-hostile standalone comparison symbols in math blocks."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return []
+
+    closing_index = next(
+        (
+            index
+            for index, line in enumerate(lines[1:], start=1)
+            if line.strip() == "---"
+        ),
+        None,
+    )
+    if closing_index is None:
+        return []
+
+    errors: list[str] = []
+    closing_delimiter: str | None = None
+    fence_marker: str | None = None
+    for line_number, line in enumerate(
+        lines[closing_index + 1 :], start=closing_index + 2
+    ):
+        stripped = line.strip()
+        fence_match = FENCE_RE.match(line)
+        if fence_marker is not None:
+            if (
+                fence_match
+                and fence_match.group(1)[0] == fence_marker[0]
+                and len(fence_match.group(1)) >= len(fence_marker)
+            ):
+                fence_marker = None
+            continue
+        if fence_match:
+            fence_marker = fence_match.group(1)
+            continue
+
+        if closing_delimiter is not None:
+            if stripped == closing_delimiter:
+                closing_delimiter = None
+            elif stripped in UNSAFE_STANDALONE_MATH_SYMBOLS:
+                errors.append(
+                    f"line {line_number}: standalone {stripped} inside a math block "
+                    f"must use \\mathord{{{stripped}}} so Goldmark does not "
+                    "treat it as HTML or a block quote"
+                )
+            continue
+
+        if stripped in MATH_BLOCK_STARTS:
+            closing_delimiter = MATH_BLOCK_STARTS[stripped]
+            continue
+    if closing_delimiter is not None:
+        errors.append(f"unclosed math block: expected {closing_delimiter}")
+
+    return errors
+
+
+def validate_heading_structure(text: str) -> list[str]:
+    """Reject headings whose only content is another Markdown heading marker."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return []
+
+    closing_index = next(
+        (
+            index
+            for index, line in enumerate(lines[1:], start=1)
+            if line.strip() == "---"
+        ),
+        None,
+    )
+    if closing_index is None:
+        return []
+
+    errors: list[str] = []
+    fence_marker: str | None = None
+    for line_number, line in enumerate(
+        lines[closing_index + 1 :], start=closing_index + 2
+    ):
+        fence_match = FENCE_RE.match(line)
+        if fence_marker is not None:
+            if (
+                fence_match
+                and fence_match.group(1)[0] == fence_marker[0]
+                and len(fence_match.group(1)) >= len(fence_marker)
+            ):
+                fence_marker = None
+            continue
+        if fence_match:
+            fence_marker = fence_match.group(1)
+            continue
+        if LITERAL_HASH_HEADING_RE.match(line):
+            errors.append(
+                f"line {line_number}: heading content is only '#'; escape it as \\# "
+                "or wrap it in code formatting to avoid an empty heading"
+            )
+
+    return errors
+
+
 def _is_heading(line: str) -> bool:
     return bool(HEADING_RE.match(line))
 
@@ -346,6 +450,14 @@ def validate_files(content_dir: Path) -> list[str]:
                 f"{path}: markdown: {error}"
                 for error in validate_markdown_structure(path.read_text(encoding="utf-8"))
             )
+        errors.extend(
+            f"{path}: markdown: {error}"
+            for error in validate_math_structure(path.read_text(encoding="utf-8"))
+        )
+        errors.extend(
+            f"{path}: markdown: {error}"
+            for error in validate_heading_structure(path.read_text(encoding="utf-8"))
+        )
         errors.extend(
             f"{path}: {error}"
             for error in validate_asset_references(path, content_dir)

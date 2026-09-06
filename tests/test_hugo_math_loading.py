@@ -98,6 +98,19 @@ class HugoMathLoadingTests(unittest.TestCase):
         self.assertIn("/js/mathjax-config.js", source)
         self.assertIn("mathjax@3.2.2/es5/tex-mml-chtml.js", source)
 
+    def test_latex_cheatsheet_comparison_examples_survive_hugo(self):
+        source = self._html("math/latex-格式速记/index.html")
+        self.assertIn(r"\mathord{<}", source)
+        self.assertIn(r"\mathord{>}", source)
+        self.assertIn(r"\mathord{=}", source)
+        self.assertIn(r"\mathord{-}", source)
+        self.assertNotIn("<blockquote></blockquote>", source)
+        self.assertNotIn("<h1 id=heading-3>$$", source)
+        self.assertNotIn("<h2 id=heading-5>$$", source)
+        self.assertNotIn("<h3></h3>", source)
+        self.assertRegex(source, r"<h3[^>]*>#<")
+        self.assertIn("函数 $f(x)=x^2$ 在 $x=0$ 处取得最小值。", source)
+
 
 if __name__ == "__main__":
     unittest.main()
