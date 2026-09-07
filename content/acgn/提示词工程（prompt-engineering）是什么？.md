@@ -160,3 +160,12 @@ sclar_high_figure.pdf
 **让我们来找其它模型来检验这一点：**
 
 _使用 deepseek-v4-flash 0731（默认思考强度）_
+
+**_弱提示词_**
+
+![](/images/sclar_low_figure.png)
+
+**_强提示词_**
+![](/images/sclar_high_figure.png)
+
+**我们可以明显看到，在强提示词的约束下，得到的结果保持了相当不错的一致性**
