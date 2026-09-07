@@ -51,7 +51,7 @@ sclar_low_figure.pdf
 
 请使用 Python 3 和 Matplotlib，制作一张论文实验结果图，解释 Sclar、Choi、Tsvetkov 和 Suhr 在 ICLR 2024 论文中关于 prompt formatting sensitivity 的定量结果。
 
-### 论文
+论文
 
 Sclar, M., Choi, Y., Tsvetkov, Y., & Suhr, A. (2024).
 
@@ -59,13 +59,13 @@ Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design.
 
 ICLR 2024.
 
-### 论文链接
+论文链接
 
 https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7b32b1a4d-Paper-Conference.pdf
 
 只使用 Python 3、Matplotlib 和本地文件操作，不调用任何 skill，也不调用其他代理。
 
-### 图形的核心结论是
+图形的核心结论是
 
 只改变语义等价的 prompt formatting，也可能显著改变模型测得的准确率。单一格式得到的准确率只是格式空间中的一个点估计。
 
@@ -81,7 +81,7 @@ https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7
 - task322：Format 1 = 61.4%，Format 2 = 71.4%，差值 = 10.0 points；
 - task279：Format 1 = 37.2%，Format 2 = 44.1%，差值 = 6.9 points。
 
-### 请将图形设计为最多两个面板
+请将图形设计为最多两个面板
 
 (a) Hero panel：使用水平 dumbbell plot 或 paired dot plot 展示上述七个任务。横轴为 Accuracy (%)，每一行代表一个任务，两个端点分别表示 Format 1 和 Format 2，用连接线表示同一任务中的格式变化，并直接标注 accuracy difference。任务按照差值从大到小排序。
 
@@ -94,7 +94,7 @@ https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7
 
 在辅助面板中清楚区分不同实验上下文，避免把这些数值误解为同一批样本或同一种统计量。median、maximum 和 lower-bound 等统计量使用不同标记，并在图中标注数据来源。
 
-### 图形类型必须服从数据结构
+图形类型必须服从数据结构
 
 - 成对格式比较使用 dumbbell plot 或 paired dot plot；
 - 不同实验条件的离散统计量使用横向点图；
@@ -102,7 +102,7 @@ https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7
 - 不要把无序的模型类别直接用折线连接；
 - 不要添加论文没有提供的误差线、置信区间、均值、方差、p 值或连续数值序列。
 
-### 配色采用克制的多色方案
+配色采用克制的多色方案
 
 - Format 1 使用蓝色；
 - Format 2 使用橙色；
@@ -111,7 +111,7 @@ https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7
 - 保持颜色数量有限，避免彩虹色；
 - 颜色需要具有明确的语义，并在小尺寸和灰度打印中保持可区分。
 
-### 版面要求
+版面要求
 
 - 画布尺寸为 183 mm × 130 mm；
 - 白色背景；
@@ -123,7 +123,7 @@ https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7
 - 图注注明数据来自论文 Table 2、Abstract 和 Section 4.5；
 - 明确区分 reported value 与不同实验设置下的数值。
 
-### 代码要求
+代码要求
 
 - 显式设置字体优先级为 Arial、PingFang SC、DejaVu Sans、Liberation Sans；
 - SVG 保留可编辑文字；
@@ -132,7 +132,7 @@ https://proceedings.iclr.cc/paper_files/paper/2024/file/6c0e99d736da621403018ca7
 - 在 Python 脚本中保留实际绘图数据、单位转换和每组数据的来源；
 - 实际运行脚本并检查图形是否存在文字重叠、标签截断、图例遮挡和坐标轴单位错误。
 
-### 请在当前工作目录生成以下文件
+请在当前工作目录生成以下文件
 
 sclar_high_figure.py
 
@@ -153,3 +153,12 @@ sclar_high_figure.pdf
 **两者差别不大，甚至在某些部分，低精度的提示词得到的效果比高精度提示词得到的更好**
 
 是什么原因导致了这个现象？
+为了方便叙述，我们将低精度的提示词称为**“弱提示词”，**而将高精度的提示词称为**“强提示词”**
+
+通常而言，强提示词会增加更多的约束与更明确的任务指标，这使得强提示词将在更多的环境下表现的更加稳定
+
+在刚刚的例子中 gpt-5.6 sol 绘制的图像的质量即使在弱提示词的情况下也相当优秀的原因就是因为模型本身的性能足够强劲，即使没有明确的提示词引导，它也将表现优异
+
+**让我们来找性能更弱的模型来检验这一点：**
+
+_使用 deepseek-v4-flash 0731（默认思考强度）_
