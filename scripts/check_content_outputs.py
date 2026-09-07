@@ -35,7 +35,24 @@ def check_content_outputs(public: Path, hugo_list: Path) -> list[str]:
                 + ", ".join(sorted(missing_columns))
             ]
 
-        for row in reader:
+        rows = list(reader)
+        route_owners: dict[str, str] = {}
+        for row in rows:
+            if row.get("kind") != "page" or not row.get("section"):
+                continue
+
+            relative_path = _output_path(row["permalink"])
+            display_path = relative_path.as_posix()
+            owner = row.get("path", "unknown source")
+            previous_owner = route_owners.get(display_path)
+            if previous_owner is not None:
+                errors.append(
+                    f"duplicate article route: {display_path} ({previous_owner}; {owner})"
+                )
+            else:
+                route_owners[display_path] = owner
+
+        for row in rows:
             if row.get("kind") != "page" or not row.get("section"):
                 continue
 

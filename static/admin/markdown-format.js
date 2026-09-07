@@ -14,6 +14,43 @@
   var STANDALONE_LABEL_RE = /^\s*(?![#>*`-])(?!.*[。！？!?；;])[^\s].{0,38}[：:]\s*$/;
   var HEADING_RE = /^\s{0,3}#{1,6}\s+\S/;
   var LIST_ITEM_RE = /^\s{0,3}(?:[-*+]\s+|\d+[.)、]\s+)\S/;
+  var ESCAPED_TILDE_FENCE_RE = /^([ \t]{0,3})((?:\\~){3,})(.*)$/;
+
+  function canonicalizeEscapedFenceMarker(line) {
+    var match = line.match(ESCAPED_TILDE_FENCE_RE);
+    if (!match) return line;
+    return match[1] + match[2].replace(/\\~/g, '~') + match[3];
+  }
+
+  function isFence(line) {
+    var stripped = line.trim();
+    return stripped.indexOf('```') === 0 || stripped.indexOf('~~~') === 0;
+  }
+
+  function normalizeFenceMarkers(body) {
+    var newline = body.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+    var hadTrailingNewline = /(?:\r\n|\n|\r)$/.test(body);
+    var lines = body.replace(/\r\n/g, '\n').split('\n');
+    if (hadTrailingNewline && lines[lines.length - 1] === '') lines.pop();
+    lines = collapseTableBlankLines(lines);
+
+    var normalized = [];
+    var inFence = false;
+    lines.forEach(function (line) {
+      var candidate = canonicalizeEscapedFenceMarker(line);
+      if (!inFence) {
+        normalized.push(candidate);
+        if (isFence(candidate)) inFence = true;
+        return;
+      }
+
+      var normalizedLine = isFence(candidate) ? candidate : line;
+      normalized.push(normalizedLine);
+      if (isFence(candidate)) inFence = false;
+    });
+
+    return normalized.join(newline) + (hadTrailingNewline ? newline : '');
+  }
 
   function isHeading(line) {
     return HEADING_RE.test(line);
@@ -23,7 +60,38 @@
     return LIST_ITEM_RE.test(line);
   }
 
+  function isTableRow(line) {
+    var stripped = line.trim();
+    return stripped.indexOf('|') >= 0 && (
+      stripped.indexOf('|') === 0 || stripped.lastIndexOf('|') === stripped.length - 1
+    );
+  }
+
+  function collapseTableBlankLines(lines) {
+    var normalized = [];
+    var index = 0;
+    while (index < lines.length) {
+      if (lines[index].trim() !== '') {
+        normalized.push(lines[index]);
+        index += 1;
+        continue;
+      }
+
+      var end = index;
+      while (end < lines.length && lines[end].trim() === '') end += 1;
+      var previous = normalized.length ? normalized[normalized.length - 1] : '';
+      var following = end < lines.length ? lines[end] : '';
+      if (isTableRow(previous) && isTableRow(following)) {
+        index = end;
+        continue;
+      }
+      while (index < end) normalized.push(lines[index++]);
+    }
+    return normalized;
+  }
+
   function looksLikeParagraphBoundary(current, following) {
+    if (isTableRow(current) || isTableRow(following)) return false;
     if (current.length > 48 || following.length < 30) return false;
     if (/^(?:#|>|-|\*|```|\$\$|!\[)/.test(current)) return false;
     if (MALFORMED_ORDERED_TITLE_RE.test(current)) return true;
@@ -33,27 +101,34 @@
 
   function normalizeMarkdownBody(body, options) {
     options = options || {};
-    if (typeof body !== 'string' || options.math === true) return body;
+    if (typeof body !== 'string') return body;
+    if (options.math === true) return normalizeFenceMarkers(body);
 
     var newline = body.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
     var hadTrailingNewline = /(?:\r\n|\n|\r)$/.test(body);
     var lines = body.replace(/\r\n/g, '\n').split('\n');
     if (hadTrailingNewline && lines[lines.length - 1] === '') lines.pop();
+    lines = collapseTableBlankLines(lines);
 
     var transformed = [];
     var inFence = false;
     lines.forEach(function (line) {
-      var stripped = line.trim();
+      var canonicalLine = canonicalizeEscapedFenceMarker(line);
+      var stripped = canonicalLine.trim();
       if (inFence) {
-        transformed.push(line);
-        if (stripped.indexOf('```') === 0 || stripped.indexOf('~~~') === 0) {
+        transformed.push(isFence(canonicalLine) ? canonicalLine : line);
+        if (isFence(canonicalLine)) {
           inFence = false;
         }
         return;
       }
-      if (stripped.indexOf('```') === 0 || stripped.indexOf('~~~') === 0) {
-        transformed.push(line);
+      if (isFence(canonicalLine)) {
+        transformed.push(canonicalLine);
         inFence = true;
+        return;
+      }
+      if (isTableRow(canonicalLine)) {
+        transformed.push(canonicalLine);
         return;
       }
 

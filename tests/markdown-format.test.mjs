@@ -35,6 +35,50 @@ test('normalizeMarkdownBody skips math entries and fenced code', () => {
   assert.match(normalized, /```text\n2\.raw-value\n```/);
 });
 
+test('normalizeMarkdownBody restores CMS-escaped tilde fences', () => {
+  const source = [
+    '\\~\\~\\~text',
+    '1.raw-value',
+    '\\~\\~\\~'
+  ].join('\n');
+
+  const normalized = formatter.normalizeMarkdownBody(source);
+
+  assert.equal(normalized, '~~~text\n1.raw-value\n~~~');
+  assert.equal(normalized, formatter.normalizeMarkdownBody(normalized));
+});
+
+test('normalizeMarkdownBody restores escaped fences for math entries too', () => {
+  const source = [
+    '\\~\\~\\~text',
+    '$$x^2 + y^2 = z^2$$',
+    '\\~\\~\\~'
+  ].join('\n');
+
+  assert.equal(
+    formatter.normalizeMarkdownBody(source, { math: true }),
+    '~~~text\n$$x^2 + y^2 = z^2$$\n~~~'
+  );
+});
+
+test('normalizeMarkdownBody keeps table rows contiguous', () => {
+  const source = [
+    '| 内容 | 作用 |',
+    '| --- | --- |',
+    '',
+    '| 任务 | 指定目标 |',
+    '',
+    '| 示例 | 展示格式 |'
+  ].join('\n');
+
+  const normalized = formatter.normalizeMarkdownBody(source);
+
+  assert.equal(
+    normalized,
+    '| 内容 | 作用 |\n| --- | --- |\n| 任务 | 指定目标 |\n| 示例 | 展示格式 |'
+  );
+});
+
 test('normalizeMarkdownBody keeps sentence-introducing labels as prose', () => {
   const source = [
     '这是一个用于记录我个人感悟与思考的空间。内容主要包括：',

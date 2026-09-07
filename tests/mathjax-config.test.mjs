@@ -58,7 +58,7 @@ test('CMS loads local MathJax assets in lazy order without an eager runtime', ()
   assert.deepEqual(scripts, [
     '/js/mathjax-config.js?v=lazy-1',
     'https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js',
-    '/admin/markdown-format.js?v=2e8ea2f',
+    '/admin/markdown-format.js?v=3fence-1',
     '/admin/mathjax-loader.js?v=lazy-1',
     '/admin/mathjax-preview.js?v=lazy-1'
   ]);

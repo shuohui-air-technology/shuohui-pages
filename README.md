@@ -79,7 +79,8 @@ After the smoke check, confirm that:
 - 保存并发布（Save and Publish）：提交到 `main` 并触发当前 GitHub Actions，按正常流程部署。
 - `draft: true`：Hugo 构建时不会生成公开页面。要公开文章，必须取消“是否为草稿”，再选择“保存并发布”；当前验证工具不会静默覆盖作者的发布意图。
 - 未发布保存仍然会提交到仓库；如果之后发生一次未跳过 CI 的部署，这些提交可能一起发布，因此需要长期隐藏的文章必须保留 `draft: true`。
-- 后台保存文章时会自动整理常见 Markdown 结构：补齐段落空行、将类似 `1.Agent` 的编号标题规范为标题、将独立的“优点：”类标签整理为小标题；数学文章和代码块保持原样。部署前还会再次规范化并校验，无法安全判断的情况会给出具体行号。
+- 后台保存文章时会自动整理常见 Markdown 结构：补齐段落空行、将类似 `1.Agent` 的编号标题规范为标题、将独立的“优点：”类标签整理为小标题；代码围栏和表格会作为完整结构保护，CMS 误加的 `\~\~\~` 围栏转义也会自动恢复。部署前还会再次规范化并校验，无法安全判断的情况会给出具体行号。
+- 文章编辑页提供可选的文章 `slug` 字段。留空时沿用文件名；填写时只能使用小写英文、数字和短横线，例如 `prompt-engineering`。它只影响当前文章的 URL，与板块注册表中的板块 `slug` 是两套字段；构建检查会拒绝同一板块内的重复文章路由。修改已有文章的 slug 会改变 URL，如需保留旧链接应另行配置 Hugo alias。
 - 文章必须显式写出 `draft`、`math`、`comments` 三个布尔字段；校验还会拒绝重复的顶层 front matter 键、缺失的本地图片，以及与板块注册表不一致的生成配置。
 - 生成后的 HTML 会检查根路径静态资源是否存在，并强制检查 CMS 入口、CMS 配置、格式化脚本、预览脚本和共享 MathJax 配置，避免“页面打开但后台脚本 404”的配置问题。
 - The local validation and build commands in this README do not push, deploy the Worker, or publish GitHub Pages; any of those actions require explicit user confirmation.

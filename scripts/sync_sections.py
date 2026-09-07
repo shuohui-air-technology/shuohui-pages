@@ -210,6 +210,14 @@ def _render_article_collection(section: dict[str, object]) -> str:
         "    create: true\n"
         "    fields:\n"
         '      - {label: "文章标题", name: "title", widget: "string"}\n'
+        '      - label: "文章 Slug（可选；不是板块 Slug）"\n'
+        '        name: "slug"\n'
+        '        widget: "string"\n'
+        '        required: false\n'
+        '        hint: "留空沿用文件名；只用小写英文、数字和短横线，例如 prompt-engineering"\n'
+        '        pattern:\n'
+        '          - "^[a-z0-9]+(?:-[a-z0-9]+)*$"\n'
+        '          - "留空或只使用小写英文、数字和短横线"\n'
         '      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}\n'
         f'      - {{label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: {math_default}}}\n'
         '      - label: "是否为草稿"\n'

@@ -67,6 +67,50 @@ class ContentToolsTests(unittest.TestCase):
 
         self.assertEqual(source, normalize_markdown_structure(source))
 
+    def test_normalize_markdown_structure_closes_gaps_inside_tables(self):
+        source = (
+            "---\ntitle: Table\ndate: 2026-08-14T10:00:00\nmath: false\n---\n\n"
+            "| 内容 | 作用 |\n"
+            "| --- | --- |\n\n"
+            "| 任务 | 指定目标 |\n\n"
+            "| 示例 | 展示格式 |\n"
+        )
+
+        normalized = normalize_markdown_structure(source)
+
+        self.assertIn(
+            "| --- | --- |\n| 任务 | 指定目标 |\n| 示例 | 展示格式 |\n",
+            normalized,
+        )
+        self.assertEqual(normalized, normalize_markdown_structure(normalized))
+
+    def test_normalize_markdown_structure_restores_escaped_tilde_fences(self):
+        source = (
+            "---\ntitle: Blocks\ndate: 2026-08-14T10:00:00\nmath: false\n---\n\n"
+            "\\~\\~\\~text\n"
+            "1.raw-value\n"
+            "\\~\\~\\~\n"
+        )
+
+        normalized = normalize_markdown_structure(source)
+
+        self.assertIn("~~~text\n1.raw-value\n~~~\n", normalized)
+        self.assertNotIn("\\~\\~\\~", normalized)
+        self.assertEqual(normalized, normalize_markdown_structure(normalized))
+
+    def test_normalize_markdown_structure_restores_escaped_fences_in_math_entries(self):
+        source = (
+            "---\ntitle: Formula\ndate: 2026-08-14T10:00:00\nmath: true\n---\n\n"
+            "\\~\\~\\~text\n"
+            "$$x^2 + y^2 = z^2$$\n"
+            "\\~\\~\\~\n"
+        )
+
+        normalized = normalize_markdown_structure(source)
+
+        self.assertIn("~~~text\n$$x^2 + y^2 = z^2$$\n~~~\n", normalized)
+        self.assertEqual(normalized, normalize_markdown_structure(normalized))
+
     def test_validate_markdown_structure_ignores_fences_and_tables(self):
         source = (
             "---\ntitle: Blocks\ndate: 2026-08-14T10:00:00\n---\n\n"
@@ -77,6 +121,17 @@ class ContentToolsTests(unittest.TestCase):
             "| 内容 | 作用 |\n"
             "|---|---|\n"
             "| 任务 | 指定目标 |\n"
+        )
+
+        self.assertEqual(validate_markdown_structure(source), [])
+
+    def test_validate_markdown_structure_recognizes_escaped_fences(self):
+        source = (
+            "---\ntitle: Blocks\ndate: 2026-08-14T10:00:00\n---\n\n"
+            "\\~\\~\\~text\n"
+            "优点：\n"
+            "这是代码块中的原文，不应被当成文章结构。\n"
+            "\\~\\~\\~\n"
         )
 
         self.assertEqual(validate_markdown_structure(source), [])
@@ -301,6 +356,49 @@ class ContentToolsTests(unittest.TestCase):
             "---\ntitle: Draft\ndraft: true\nmath: false\n---\n"
         )
         self.assertIs(parsed["draft"], True)
+
+    def test_validate_front_matter_accepts_optional_article_slug(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "article.md"
+            path.write_text(
+                "---\ntitle: Article\ndate: 2026-06-09T10:24:00\n"
+                "draft: false\nmath: false\ncomments: true\n"
+                "slug: prompt-engineering\n---\ntext\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(validate_front_matter(path), [])
+
+    def test_validate_front_matter_rejects_unsafe_article_slug(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "article.md"
+            path.write_text(
+                "---\ntitle: Article\ndate: 2026-06-09T10:24:00\n"
+                "draft: false\nmath: false\ncomments: true\n"
+                "slug: Prompt Engineering\n---\ntext\n",
+                encoding="utf-8",
+            )
+
+            errors = validate_front_matter(path)
+
+            self.assertTrue(any("slug: invalid value" in error for error in errors))
+
+    def test_validate_files_rejects_duplicate_article_slugs_in_one_section(self):
+        with tempfile.TemporaryDirectory() as directory:
+            content_dir = Path(directory)
+            section_dir = content_dir / "acgn"
+            section_dir.mkdir()
+            for name in ("first.md", "second.md"):
+                (section_dir / name).write_text(
+                    "---\ntitle: Article\ndate: 2026-06-09T10:24:00\n"
+                    "draft: false\nmath: false\ncomments: true\n"
+                    "slug: same-route\n---\ntext\n",
+                    encoding="utf-8",
+                )
+
+            errors = validate_files(content_dir)
+
+            self.assertTrue(any("duplicate route segment" in error for error in errors))
 
 
 if __name__ == "__main__":

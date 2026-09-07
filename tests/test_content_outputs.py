@@ -114,6 +114,53 @@ class ContentOutputTests(unittest.TestCase):
                 ],
             )
 
+    def test_duplicate_article_routes_are_reported_even_when_one_is_a_draft(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "public"
+            public.mkdir()
+            hugo_list = root / "hugo-list.csv"
+            write_hugo_list(
+                hugo_list,
+                [
+                    {
+                        "path": "content/acgn/first.md",
+                        "slug": "shared",
+                        "title": "First",
+                        "date": "2026-08-14T10:00:00Z",
+                        "expiryDate": "0001-01-01T00:00:00Z",
+                        "publishDate": "2026-08-14T10:00:00Z",
+                        "draft": "false",
+                        "permalink": "https://example.com/acgn/shared/",
+                        "kind": "page",
+                        "section": "acgn",
+                    },
+                    {
+                        "path": "content/acgn/second.md",
+                        "slug": "shared",
+                        "title": "Second",
+                        "date": "2026-08-14T11:00:00Z",
+                        "expiryDate": "0001-01-01T00:00:00Z",
+                        "publishDate": "2026-08-14T11:00:00Z",
+                        "draft": "true",
+                        "permalink": "https://example.com/acgn/shared/",
+                        "kind": "page",
+                        "section": "acgn",
+                    },
+                ],
+            )
+
+            errors = check_content_outputs(public, hugo_list)
+
+            self.assertEqual(
+                errors,
+                [
+                    "duplicate article route: acgn/shared/index.html "
+                    "(content/acgn/first.md; content/acgn/second.md)",
+                    "missing published output: acgn/shared/index.html",
+                ],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,7 +25,9 @@ COVER_IMAGE_RE = re.compile(r"^\s*image:\s*(.+?)\s*$")
 MATH_BLOCK_STARTS = {"$$": "$$", r"\[": r"\]"}
 UNSAFE_STANDALONE_MATH_SYMBOLS = {"<", ">", "=", "-"}
 FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+ESCAPED_TILDE_FENCE_RE = re.compile(r"^([ \t]{0,3})((?:\\~){3,})(.*)$")
 LITERAL_HASH_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+#+\s*$")
+ARTICLE_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def normalize_date_text(text: str) -> str:
@@ -107,6 +109,13 @@ def _validate_date(value: object) -> bool:
     return True
 
 
+def _validate_article_slug(value: object) -> bool:
+    """Allow an empty optional slug, otherwise require a stable URL segment."""
+    return value in {None, ""} or (
+        isinstance(value, str) and ARTICLE_SLUG_RE.fullmatch(value) is not None
+    )
+
+
 def validate_front_matter(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     front_matter = _front_matter_lines(text)
@@ -130,6 +139,12 @@ def validate_front_matter(path: Path) -> list[str]:
 
     if "title" not in parsed or not isinstance(parsed["title"], str) or not parsed["title"]:
         errors.append(f"{path}: title: missing")
+
+    if not is_section_index and "slug" in parsed and not _validate_article_slug(parsed["slug"]):
+        errors.append(
+            f"{path}: slug: invalid value {parsed['slug']!r}; use lower-case letters, "
+            "digits, and single hyphens"
+        )
 
     if "date" not in parsed:
         if not is_section_index:
@@ -205,7 +220,7 @@ def validate_markdown_structure(text: str) -> list[str]:
         if not stripped:
             continue
 
-        fence_match = FENCE_RE.match(line)
+        fence_match = _fence_match(line)
         if fence_marker is not None:
             if _closes_fence(fence_match, fence_marker):
                 fence_marker = None
@@ -260,7 +275,7 @@ def validate_math_structure(text: str) -> list[str]:
         lines[closing_index + 1 :], start=closing_index + 2
     ):
         stripped = line.strip()
-        fence_match = FENCE_RE.match(line)
+        fence_match = _fence_match(line)
         if fence_marker is not None:
             if (
                 fence_match
@@ -315,7 +330,7 @@ def validate_heading_structure(text: str) -> list[str]:
     for line_number, line in enumerate(
         lines[closing_index + 1 :], start=closing_index + 2
     ):
-        fence_match = FENCE_RE.match(line)
+        fence_match = _fence_match(line)
         if fence_marker is not None:
             if (
                 fence_match
@@ -352,11 +367,81 @@ def _closes_fence(match: re.Match[str] | None, marker: str) -> bool:
     )
 
 
+def _canonicalize_escaped_fence_marker(line: str) -> str:
+    """Undo CMS escaping applied to a tilde fence at the start of a line.
+
+    Sveltia can serialize a Markdown fence as ``\\~\\~\\~``. That is a
+    literal escaped tilde sequence to Goldmark, not a code-block delimiter.
+    Only line-start fence-shaped sequences are changed; ordinary inline
+    escaped tildes and content inside an already-open fence remain untouched.
+    """
+    match = ESCAPED_TILDE_FENCE_RE.match(line)
+    if not match:
+        return line
+    marker = match.group(2).replace("\\~", "~")
+    return f"{match.group(1)}{marker}{match.group(3)}"
+
+
+def _fence_match(line: str) -> re.Match[str] | None:
+    return FENCE_RE.match(_canonicalize_escaped_fence_marker(line))
+
+
+def _normalize_escaped_fence_markers(body: str) -> str:
+    """Canonicalize escaped fences and close gaps inside Markdown tables."""
+    newline = "\r\n" if "\r\n" in body else "\n"
+    had_trailing_newline = body.endswith(("\n", "\r"))
+    lines = body.replace("\r\n", "\n").split("\n")
+    if had_trailing_newline and lines and lines[-1] == "":
+        lines.pop()
+    lines = _collapse_table_blank_lines(lines)
+
+    normalized: list[str] = []
+    fence_marker: str | None = None
+    for line in lines:
+        candidate = _canonicalize_escaped_fence_marker(line)
+        fence_match = FENCE_RE.match(candidate)
+        if fence_marker is None:
+            normalized.append(candidate)
+            if fence_match:
+                fence_marker = fence_match.group(1)
+            continue
+
+        normalized.append(candidate if fence_match else line)
+        if _closes_fence(fence_match, fence_marker):
+            fence_marker = None
+
+    result = newline.join(normalized)
+    return result + (newline if had_trailing_newline else "")
+
+
 def _is_table_row(line: str) -> bool:
     stripped = line.strip()
     return "|" in stripped and (
         stripped.startswith("|") or stripped.endswith("|")
     )
+
+
+def _collapse_table_blank_lines(lines: list[str]) -> list[str]:
+    """Keep Markdown table rows contiguous after editor reformatting."""
+    normalized: list[str] = []
+    index = 0
+    while index < len(lines):
+        if lines[index].strip():
+            normalized.append(lines[index])
+            index += 1
+            continue
+
+        end = index
+        while end < len(lines) and not lines[end].strip():
+            end += 1
+        previous = normalized[-1] if normalized else ""
+        following = lines[end] if end < len(lines) else ""
+        if _is_table_row(previous) and _is_table_row(following):
+            index = end
+            continue
+        normalized.extend(lines[index:end])
+        index = end
+    return normalized
 
 
 def _normalize_markdown_body(body: str) -> str:
@@ -365,19 +450,21 @@ def _normalize_markdown_body(body: str) -> str:
     lines = body.replace("\r\n", "\n").split("\n")
     if had_trailing_newline and lines and lines[-1] == "":
         lines.pop()
+    lines = _collapse_table_blank_lines(lines)
 
     transformed: list[tuple[str, bool]] = []
     fence_marker: str | None = None
     for line_index, line in enumerate(lines):
+        canonical_line = _canonicalize_escaped_fence_marker(line)
         stripped = line.strip()
-        fence_match = FENCE_RE.match(line)
+        fence_match = FENCE_RE.match(canonical_line)
         if fence_marker is not None:
-            transformed.append((line, True))
+            transformed.append((canonical_line if fence_match else line, True))
             if _closes_fence(fence_match, fence_marker):
                 fence_marker = None
             continue
         if fence_match:
-            transformed.append((line, True))
+            transformed.append((canonical_line, True))
             fence_marker = fence_match.group(1)
             continue
 
@@ -427,7 +514,7 @@ def _normalize_markdown_body(body: str) -> str:
 def normalize_markdown_structure(text: str) -> str:
     """Conservatively format common Markdown structure in non-math entries."""
     front_matter = parse_front_matter(text)
-    if not front_matter or front_matter.get("math") is True:
+    if not front_matter:
         return text
 
     lines = text.splitlines(keepends=True)
@@ -446,6 +533,8 @@ def normalize_markdown_structure(text: str) -> str:
 
     prefix = "".join(lines[: closing_index + 1])
     body = "".join(lines[closing_index + 1 :])
+    if front_matter.get("math") is True:
+        return prefix + _normalize_escaped_fence_markers(body)
     return prefix + _normalize_markdown_body(body)
 
 
@@ -501,6 +590,31 @@ def validate_files(content_dir: Path) -> list[str]:
             f"{path}: {error}"
             for error in validate_asset_references(path, content_dir)
         )
+    errors.extend(validate_article_slug_conflicts(content_dir))
+    return errors
+
+
+def validate_article_slug_conflicts(content_dir: Path) -> list[str]:
+    """Reject duplicate explicit article slugs within one section."""
+    seen: dict[tuple[str, str], Path] = {}
+    errors: list[str] = []
+    for path in iter_markdown_files(content_dir):
+        if path.name == "_index.md":
+            continue
+        front_matter = parse_front_matter(path.read_text(encoding="utf-8"))
+        value = front_matter.get("slug")
+        if not isinstance(value, str) or not value:
+            continue
+        section = path.parent.relative_to(content_dir).as_posix()
+        key = (section, value)
+        previous = seen.get(key)
+        if previous is not None:
+            errors.append(
+                f"{path}: slug: duplicate route segment {value!r} in {section}; "
+                f"already used by {previous}"
+            )
+        else:
+            seen[key] = path
     return errors
 
 

@@ -93,6 +93,51 @@ class HugoMathLoadingTests(unittest.TestCase):
             self.assertIn("/js/mathjax-config.js", source)
             self.assertIn("mathjax@3.2.2/es5/tex-mml-chtml.js", source)
 
+    def test_article_slug_controls_hugo_route(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture_root = Path(directory)
+            content_dir = fixture_root / "content"
+            section_dir = content_dir / "acgn"
+            section_dir.mkdir(parents=True)
+            (content_dir / "_index.md").write_text(
+                '---\ntitle: "Fixture"\n---\n', encoding="utf-8"
+            )
+            (section_dir / "_index.md").write_text(
+                '---\ntitle: "随笔"\nmath: false\n---\n', encoding="utf-8"
+            )
+            (section_dir / "source-title.md").write_text(
+                '---\n'
+                'title: "Source title"\n'
+                'slug: custom-route\n'
+                'date: 2026-08-31T00:00:00+08:00\n'
+                'draft: false\n'
+                'math: false\n'
+                'comments: false\n'
+                '---\n\n正文\n',
+                encoding="utf-8",
+            )
+            public_dir = fixture_root / "public"
+            result = subprocess.run(
+                [
+                    "hugo",
+                    "--minify",
+                    "--gc",
+                    "--buildFuture",
+                    "--contentDir",
+                    str(content_dir),
+                    "--destination",
+                    str(public_dir),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            self.assertTrue((public_dir / "acgn/custom-route/index.html").is_file())
+            self.assertFalse((public_dir / "acgn/source-title/index.html").exists())
+
     def test_math_article_still_loads_mathjax(self):
         source = self._html("math/和差化积/index.html")
         self.assertIn("/js/mathjax-config.js", source)
@@ -110,6 +155,19 @@ class HugoMathLoadingTests(unittest.TestCase):
         self.assertNotIn("<h3></h3>", source)
         self.assertRegex(source, r"<h3[^>]*>#<")
         self.assertIn("函数 $f(x)=x^2$ 在 $x=0$ 处取得最小值。", source)
+
+    def test_article_code_fences_inside_collapse_render_as_code_blocks(self):
+        source = self._html("acgn/提示词工程prompt-engineering是什么/index.html")
+
+        self.assertNotIn("~~~text", source)
+        self.assertNotIn(r"\~\~\~", source)
+        self.assertNotIn("<p><details", source)
+        self.assertGreaterEqual(source.count("<details>"), 3)
+        self.assertGreaterEqual(source.count("<pre"), 7)
+        self.assertGreaterEqual(source.count("<table>"), 3)
+        self.assertIn("<td>任务描述</td>", source)
+        self.assertNotIn("| 任务描述 |", source)
+        self.assertIn("A park in the spring next to a lake", source)
 
 
 if __name__ == "__main__":

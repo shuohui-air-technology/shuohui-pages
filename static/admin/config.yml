@@ -59,6 +59,14 @@ collections:
     create: true
     fields:
       - {label: "文章标题", name: "title", widget: "string"}
+      - label: "文章 Slug（可选；不是板块 Slug）"
+        name: "slug"
+        widget: "string"
+        required: false
+        hint: "留空沿用文件名；只用小写英文、数字和短横线，例如 prompt-engineering"
+        pattern:
+          - "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          - "留空或只使用小写英文、数字和短横线"
       - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: true}
       - label: "是否为草稿"
@@ -84,6 +92,14 @@ collections:
     create: true
     fields:
       - {label: "文章标题", name: "title", widget: "string"}
+      - label: "文章 Slug（可选；不是板块 Slug）"
+        name: "slug"
+        widget: "string"
+        required: false
+        hint: "留空沿用文件名；只用小写英文、数字和短横线，例如 prompt-engineering"
+        pattern:
+          - "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          - "留空或只使用小写英文、数字和短横线"
       - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}
       - {label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: false}
       - label: "是否为草稿"
