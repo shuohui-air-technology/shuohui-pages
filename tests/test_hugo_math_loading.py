@@ -36,6 +36,25 @@ class HugoMathLoadingTests(unittest.TestCase):
     def _html(self, relative_path: str) -> str:
         return (self.public_dir / relative_path).read_text(encoding="utf-8")
 
+    def _acgn_article_containing(self, marker: str) -> str:
+        """Find the rendered article by content, not by a CMS-controlled filename."""
+        section_dir = self.public_dir / "acgn"
+        candidates = []
+        for path in sorted(section_dir.rglob("index.html")):
+            if path.parent == section_dir:
+                continue
+            source = path.read_text(encoding="utf-8")
+            if marker in source:
+                candidates.append((path, source))
+
+        self.assertEqual(
+            len(candidates),
+            1,
+            "expected one rendered article containing the marker; found "
+            + ", ".join(str(path.relative_to(self.public_dir)) for path, _ in candidates),
+        )
+        return candidates[0][1]
+
     def test_math_section_loads_mathjax_without_opening_an_article(self):
         source = self._html("math/index.html")
         self.assertIn("/js/mathjax-config.js", source)
@@ -157,7 +176,9 @@ class HugoMathLoadingTests(unittest.TestCase):
         self.assertIn("函数 $f(x)=x^2$ 在 $x=0$ 处取得最小值。", source)
 
     def test_article_code_fences_inside_collapse_render_as_code_blocks(self):
-        source = self._html("acgn/提示词工程prompt-engineering是什么/index.html")
+        source = self._acgn_article_containing(
+            "A park in the spring next to a lake"
+        )
 
         self.assertNotIn("~~~text", source)
         self.assertNotIn(r"\~\~\~", source)
