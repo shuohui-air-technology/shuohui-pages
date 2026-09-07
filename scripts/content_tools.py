@@ -195,6 +195,7 @@ def validate_markdown_structure(text: str) -> list[str]:
         return []
 
     errors: list[str] = []
+    fence_marker: str | None = None
     body = [
         (index + 1, lines[index])
         for index in range(closing_index + 1, len(lines))
@@ -204,12 +205,23 @@ def validate_markdown_structure(text: str) -> list[str]:
         if not stripped:
             continue
 
+        fence_match = FENCE_RE.match(line)
+        if fence_marker is not None:
+            if _closes_fence(fence_match, fence_marker):
+                fence_marker = None
+            continue
+        if fence_match:
+            fence_marker = fence_match.group(1)
+            continue
+
         if ORDERED_MARKER_RE.match(stripped):
             errors.append(
                 f"line {line_number}: ordered list marker must be followed by a space"
             )
 
         next_line = body[position + 1][1].strip() if position + 1 < len(body) else ""
+        if _is_table_row(stripped) or _is_table_row(next_line):
+            continue
         if next_line and STANDALONE_LABEL_RE.match(stripped):
             errors.append(
                 f"line {line_number}: standalone label should be a Markdown heading "
@@ -332,6 +344,21 @@ def _is_list_item(line: str) -> bool:
     return bool(LIST_ITEM_RE.match(line))
 
 
+def _closes_fence(match: re.Match[str] | None, marker: str) -> bool:
+    return bool(
+        match
+        and match.group(1)[0] == marker[0]
+        and len(match.group(1)) >= len(marker)
+    )
+
+
+def _is_table_row(line: str) -> bool:
+    stripped = line.strip()
+    return "|" in stripped and (
+        stripped.startswith("|") or stripped.endswith("|")
+    )
+
+
 def _normalize_markdown_body(body: str) -> str:
     newline = "\r\n" if "\r\n" in body else "\n"
     had_trailing_newline = body.endswith(("\n", "\r"))
@@ -339,18 +366,19 @@ def _normalize_markdown_body(body: str) -> str:
     if had_trailing_newline and lines and lines[-1] == "":
         lines.pop()
 
-    transformed: list[str] = []
-    in_fence = False
-    for line in lines:
+    transformed: list[tuple[str, bool]] = []
+    fence_marker: str | None = None
+    for line_index, line in enumerate(lines):
         stripped = line.strip()
-        if in_fence:
-            transformed.append(line)
-            if stripped.startswith(("```", "~~~")):
-                in_fence = False
+        fence_match = FENCE_RE.match(line)
+        if fence_marker is not None:
+            transformed.append((line, True))
+            if _closes_fence(fence_match, fence_marker):
+                fence_marker = None
             continue
-        if stripped.startswith(("```", "~~~")):
-            transformed.append(line)
-            in_fence = True
+        if fence_match:
+            transformed.append((line, True))
+            fence_marker = fence_match.group(1)
             continue
 
         title_match = MALFORMED_ORDERED_TITLE_RE.match(line)
@@ -359,25 +387,34 @@ def _normalize_markdown_body(body: str) -> str:
                 f"{title_match.group(1)}## {title_match.group(2)}. "
                 f"{title_match.group(3).strip()}"
             )
-        elif STANDALONE_LABEL_RE.match(line):
+        elif (
+            STANDALONE_LABEL_RE.match(line)
+            and line_index + 1 < len(lines)
+            and lines[line_index + 1].strip()
+        ):
             label = stripped[:-1].rstrip()
             line = f"### {label}"
-        transformed.append(line)
+        transformed.append((line, _is_table_row(stripped)))
 
     normalized: list[str] = []
-    for index, line in enumerate(transformed):
+    for index, (line, protected) in enumerate(transformed):
         stripped = line.strip()
         if not stripped:
             normalized.append(line)
             continue
 
-        previous = transformed[index - 1] if index else ""
+        previous, previous_protected = transformed[index - 1] if index else ("", False)
         previous_stripped = previous.strip()
-        needs_blank = bool(normalized and normalized[-1].strip()) and (
-            _is_heading(line)
-            or _is_heading(previous)
-            or (_is_list_item(previous) and not _is_list_item(line))
-            or _looks_like_paragraph_boundary(previous_stripped, stripped)
+        needs_blank = (
+            not protected
+            and not previous_protected
+            and bool(normalized and normalized[-1].strip())
+            and (
+                _is_heading(line)
+                or _is_heading(previous)
+                or (_is_list_item(previous) and not _is_list_item(line))
+                or _looks_like_paragraph_boundary(previous_stripped, stripped)
+            )
         )
         if needs_blank:
             normalized.append("")
@@ -413,9 +450,11 @@ def normalize_markdown_structure(text: str) -> str:
 
 
 def _looks_like_paragraph_boundary(current: str, following: str) -> bool:
+    if _is_table_row(current) or _is_table_row(following):
+        return False
     if len(current) > 48 or len(following) < 30:
         return False
-    if current.startswith(("#", ">", "-", "*", "```", "$$", "![")):
+    if current.startswith(("#", ">", "-", "*", "```", "~~~", "$$", "![")):
         return False
     if ORDERED_MARKER_RE.match(current):
         return True

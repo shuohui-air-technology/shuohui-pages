@@ -52,6 +52,35 @@ class ContentToolsTests(unittest.TestCase):
 
         self.assertEqual(source, normalize_markdown_structure(source))
 
+    def test_normalize_markdown_structure_preserves_fences_and_tables(self):
+        source = (
+            "---\ntitle: Blocks\ndate: 2026-08-14T10:00:00\nmath: false\n---\n\n"
+            "代码示例：\n\n"
+            "~~~text\n"
+            "提示 A：\n"
+            "请总结下面这段材料，不要补充材料之外的信息。\n"
+            "~~~\n\n"
+            "| 内容 | 作用 |\n"
+            "|---|---|\n"
+            "| 任务 | 指定目标 |\n"
+        )
+
+        self.assertEqual(source, normalize_markdown_structure(source))
+
+    def test_validate_markdown_structure_ignores_fences_and_tables(self):
+        source = (
+            "---\ntitle: Blocks\ndate: 2026-08-14T10:00:00\n---\n\n"
+            "~~~text\n"
+            "提示 A：\n"
+            "请总结下面这段材料，不要补充材料之外的信息。\n"
+            "~~~\n\n"
+            "| 内容 | 作用 |\n"
+            "|---|---|\n"
+            "| 任务 | 指定目标 |\n"
+        )
+
+        self.assertEqual(validate_markdown_structure(source), [])
+
     def test_normalize_date_text_adds_missing_seconds(self):
         source = "---\ndate: 2026-06-15T20:37\n---\n"
         self.assertIn("date: 2026-06-15T20:37:00", normalize_date_text(source))
