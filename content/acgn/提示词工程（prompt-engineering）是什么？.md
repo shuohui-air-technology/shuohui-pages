@@ -1,14 +1,13 @@
 ---
-title: 提示词工程（Prompt engineering）正在死去
+title: 什么是提示词工程（Prompt engineering）？它在死去吗？
 date: 2026-09-04T15:43:00
 math: false
 draft: false
 comments: true
 cover: null
 ---
-# 什么是提示词工程？现在我们是否还需要它？
 
-*我希望通过撰写这份文章来捋清思路。这些内容大多基于我的经验和理解，也有部分来源于完全公开的资料，我会附上这些资料，供有兴趣的人查阅。*
+_我希望通过撰写这份文章来捋清思路。这些内容大多基于我的经验和理解，也有部分来源于完全公开的资料，我会附上这些资料，供有兴趣的人查阅。_
 
 ## 什么是提示词工程？
 
@@ -16,33 +15,36 @@ cover: null
 
 Google AI Developers 的 Imagen 提示词指南展示了同一个公园场景在逐步增加提示词细节之后的图片输出。[Imagen prompt guide](https://ai.google.dev/gemini-api/docs/imagen#imagen-prompt-guide)
 
-第一条提示词只说明主体和环境：
+### 第一条提示词只说明主体和环境
 
 {{< collapse summary="简短提示词" >}}
 
-~~~text
+\~\~\~text
+
 A park in the spring next to a lake
-~~~
+\~\~\~
 
 {{< /collapse >}}
 
-第二条提示词补充了时间和光线：
+### 第二条提示词补充了时间和光线
 
 {{< collapse summary="加入环境与光线" >}}
 
-~~~text
+\~\~\~text
+
 A park in the spring next to a lake, the sun sets across the lake, golden hour
-~~~
+\~\~\~
 
 {{< /collapse >}}
 
-第三条提示词又加入了更具体的视觉元素：
+### 第三条提示词又加入了更具体的视觉元素
 
 {{< collapse summary="加入主体细节" >}}
 
-~~~text
+\~\~\~text
+
 A park in the spring next to a lake, the sun sets across the lake, golden hour, red wildflowers
-~~~
+\~\~\~
 
 {{< /collapse >}}
 
@@ -68,14 +70,17 @@ A park in the spring next to a lake, the sun sets across the lake, golden hour, 
 
 **让我们举一个简单的例子：**
 
-~~~text
-提示 A：
+\~\~\~text
+
+### 提示 A
+
 请总结这段会议记录。
 
-提示 B：
+### 提示 B
+
 请根据下面的会议记录，提取已经确认的决定、负责人和截止日期。
 以表格输出；每项决定单独占一行；只使用记录中出现的信息。
-~~~
+\~\~\~
 
 提示 A 把很多决定交给模型自行处理：总结什么、写多长、怎样组织都没有明确说明。提示 B 则给出了字段、格式和证据范围，模型需要自行补全的部分明显少了。
 
@@ -83,7 +88,7 @@ A park in the spring next to a lake, the sun sets across the lake, golden hour, 
 
 ## 它最初指什么？
 
-如果把问题说得简单一些，提示词工程最初关注的是这样一件事：
+### 如果把问题说得简单一些，提示词工程最初关注的是这样一件事
 
 > 在模型参数保持不变的情况下，怎样通过输入让模型完成一个具体任务？
 
@@ -100,12 +105,17 @@ Liu 等人的综述把这类研究概括为 prompt-based learning。原始输入
 早期提示词工程主要围绕自然语言输入展开。为了方便叙述，可以把它拆成下面几部分。
 
 | 内容 | 主要作用 | 典型表现 |
-|---|---|---|
+| --- | --- | --- |
+
 | 任务描述 | 指定模型要完成的动作 | 总结、分类、翻译、抽取、改写 |
+
 | 角色设定 | 提供观察问题的视角 | 研究员、编辑、测试工程师 |
+
 | Few-shot 示例 | 展示输入与输出之间的对应关系 | 分类样例、抽取样例、风格样例 |
 | 推理提示 | 引导模型展开中间分析 | 分步推理、理由示例、检查步骤 |
+
 | 上下文与分隔 | 区分材料、指令和问题 | 标题、XML 标签、Markdown 区块 |
+
 | 输出约束 | 规定答案的外在结构 | 表格、列表、JSON、固定字段 |
 
 ### 任务描述：先把要做的事情说清楚
@@ -144,11 +154,12 @@ Wei 等人的研究表明，在足够大的语言模型中，带有中间推理�
 
 当模型开始参与搜索、编程、办公自动化和智能体任务时，提示词工程处理的内容也随之变多了。
 
-可以用一条流程来表示这种变化：
+### 可以用一条流程来表示这种变化
 
-~~~text
+\~\~\~text
+
 任务目标 → 上下文组织 → 推理或行动流程 → 工具调用 → 结构化输出 → 结果评测
-~~~
+\~\~\~
 
 ### 任务规格：把需求写成可以检查的内容
 
@@ -193,7 +204,8 @@ ReAct 论文把推理轨迹和行动结合起来，让模型交替生成思考�
 我更愿意按照提示词工程正在处理的对象来分层。
 
 | 层级 | 代表内容 | 主要处理的问题 | 提示词工程对象的变化 |
-|---|---|---|---|
+| --- | --- | --- | --- |
+
 | 提示词文本层 | 任务描述、角色、few-shot、输出格式 | 模型要完成什么 | 从一句请求扩展到任务规格 |
 | 推理流程层 | CoT、CoVe、RaR | 模型如何拆解、重述和检查任务 | 从一次生成扩展到多阶段流程 |
 | 上下文与知识层 | RAG、上下文组织、提示词压缩 | 模型应该看到哪些信息 | 从提示文本扩展到上下文材料 |
@@ -286,9 +298,9 @@ Datta 等人在 ACL 2024 的研究中，让模型把用户的简短查询扩展�
 
 ### 这些层级怎样联系起来？
 
-可以把它们画成一条概念链：
+### 可以把它们画成一条概念链
 
-~~~text
+\~\~\~text
 任务目标与约束
   ↓
 提示词文本与任务规格
@@ -300,7 +312,7 @@ Datta 等人在 ACL 2024 的研究中，让模型把用户的简短查询扩展�
 工具调用与结构化接口
   ↓
 评测、反馈与提示词优化
-~~~
+\~\~\~
 
 这条链表示工作对象逐步扩大，不表示每个任务都必须经过所有步骤。一次简单问答可能只需要第一层；一个可重复运行的智能体系统则会同时涉及全部层级。
 
@@ -348,7 +360,7 @@ Sclar 等人在 ICLR 2024 的研究中考察了保持语义不变的提示格式
 
 ProSA 研究也发现，大模型整体表现出更强的提示鲁棒性，few-shot 示例可以缓解一部分敏感性，复杂推理任务和主观评价仍然容易受到提示变化影响。[Zhuo et al., 2024](https://aclanthology.org/2024.findings-emnlp.108/)
 
-所以，这里的结论需要说得准确一些：
+### 所以，这里的结论需要说得准确一些
 
 > **模型能力提升之后，低层措辞的作用变小了，输入结构、示例、上下文和流程仍然会参与决定模型行为。**
 
@@ -357,23 +369,28 @@ ProSA 研究也发现，大模型整体表现出更强的提示鲁棒性，few-s
 为了方便叙述，我们可以把不同任务放在一起比较。
 
 | 任务类型 | 主要依赖 | 提示词工程的关注对象 |
-|---|---|---|
+| --- | --- | --- |
+
 | 一次性的简单问答 | 模型的默认理解能力 | 任务对象和基本目标 |
+
 | 总结、翻译、改写 | 输出要求与材料组织 | 语气、范围、格式和上下文 |
+
 | 复杂分析与推理 | 上下文、示例和过程结构 | 证据、步骤、检查点和结果标准 |
+
 | 搜索、编程与工具协作 | 工作流和接口协议 | 工具、状态、权限、失败处理 |
+
 | 高风险或重复运行的系统 | 评测与可追踪性 | 版本、日志、回归测试和人工复核 |
 
-从这张表里，可以看到提示词工程的关注对象大致沿着下面的路径移动：
+### 从这张表里，可以看到提示词工程的关注对象大致沿着下面的路径移动
 
-~~~text
+\~\~\~text
 固定措辞
   → 任务描述
   → 示例与上下文
   → 推理和行动流程
   → 工具与输出协议
   → 系统评测
-~~~
+\~\~\~
 
 提示词工程的工作对象，从“生成一句更有效的话”逐渐扩展到了“组织一个可以被观察的模型任务”。
 
@@ -391,30 +408,30 @@ ProSA 研究也发现，大模型整体表现出更强的提示鲁棒性，few-s
 
 ## 参考资料
 
-1. Brown, T. B., et al. (2020). [*Language Models are Few-Shot Learners*](https://arxiv.org/abs/2005.14165). *Advances in Neural Information Processing Systems*.
-2. Liu, P., et al. (2023). [*Pre-train, Prompt, and Predict: A Systematic Survey of Prompting Methods in Natural Language Processing*](https://doi.org/10.1145/3560815). *ACM Computing Surveys*, 55(9).
-3. Wei, J., et al. (2022). [*Chain-of-Thought Prompting Elicits Reasoning in Large Language Models*](https://arxiv.org/abs/2201.11903). *Advances in Neural Information Processing Systems*.
-4. Ouyang, L., et al. (2022). [*Training Language Models to Follow Instructions with Human Feedback*](https://proceedings.neurips.cc/paper/2022/hash/b1efde53be364a73914f58805a001731-Abstract.html). *Advances in Neural Information Processing Systems*.
-5. Yao, S., et al. (2023). [*ReAct: Synergizing Reasoning and Acting in Language Models*](https://arxiv.org/abs/2210.03629). *International Conference on Learning Representations*.
-6. Ma, Y., et al. (2024). [*The Death and Life of Great Prompts: Analyzing the Evolution of LLM Prompts from the Structural Perspective*](https://aclanthology.org/2024.emnlp-main.1227/). *Proceedings of EMNLP 2024*.
-7. Zhou, L., et al. (2024). [*Larger and more instructable language models become less reliable*](https://www.nature.com/articles/s41586-024-07930-y). *Nature*, 634, 61-68.
-8. Sclar, M., Choi, Y., Tsvetkov, Y., & Suhr, A. (2024). [*Quantifying Language Models’ Sensitivity to Spurious Features in Prompt Design*](https://proceedings.iclr.cc/paper_files/paper/2024/hash/6c0e99d736da621403018ca7b32b1a4d-Abstract-Conference.html). *International Conference on Learning Representations*.
-9. Zhuo, J., et al. (2024). [*ProSA: Assessing and Understanding the Prompt Sensitivity of LLMs*](https://aclanthology.org/2024.findings-emnlp.108/). *Findings of EMNLP 2024*, 1950-1976.
-10. Ma, Q., et al. (2025). [*What Should We Engineer in Prompts? Training Humans in Requirement-Driven LLM Use*](https://doi.org/10.1145/3731756). *ACM Transactions on Computer-Human Interaction*.
-11. Dhuliawala, S., et al. (2023). [*Chain-of-Verification Reduces Hallucination in Large Language Models*](https://arxiv.org/abs/2309.11495). arXiv preprint.
-12. Lewis, P., et al. (2020). [*Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks*](https://arxiv.org/abs/2005.11401). *Advances in Neural Information Processing Systems*.
-13. Deng, Y., et al. (2023). [*Rephrase and Respond: Let Large Language Models Ask Better Questions for Themselves*](https://arxiv.org/abs/2311.04205). arXiv preprint.
-14. Liu, N. F., et al. (2023). [*Lost in the Middle: How Language Models Use Long Contexts*](https://arxiv.org/abs/2307.03172). arXiv preprint.
-15. Datta, S., Ku, A., Ramachandran, D., & Anderson, P. (2024). [*Prompt Expansion for Adaptive Text-to-Image Generation*](https://aclanthology.org/2024.acl-long.189/). *Proceedings of ACL 2024*, 3449-3476.
-16. Schulhoff, S., et al. (2024). [*The Prompt Report: A Systematic Survey of Prompt Engineering Techniques*](https://arxiv.org/abs/2406.06608). arXiv preprint.
-17. Wang, X., et al. (2023). [*Self-Consistency Improves Chain of Thought Reasoning in Language Models*](https://arxiv.org/abs/2203.11171). *International Conference on Learning Representations*.
-18. Yao, S., et al. (2023). [*Tree of Thoughts: Deliberate Problem Solving with Large Language Models*](https://arxiv.org/abs/2305.10601). *Advances in Neural Information Processing Systems*.
-19. Jiang, H., et al. (2023). [*LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models*](https://aclanthology.org/2023.emnlp-main.825/). *Proceedings of EMNLP 2023*, 13358-13376.
-20. Yang, C., et al. (2023). [*Large Language Models as Optimizers*](https://arxiv.org/abs/2309.03409). arXiv preprint.
-21. Wallace, E., et al. (2024). [*The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions*](https://arxiv.org/abs/2404.13208). arXiv preprint.
-22. OpenAI. [*GPT-5.5 model guidance*](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.5).
-23. OpenAI. [*Latest model guidance*](https://developers.openai.com/api/docs/guides/latest-model).
-24. OpenAI. [*Structured Outputs*](https://openai.com/index/introducing-structured-outputs-in-the-api/).
-25. Google. [*Gemini prompt design strategies*](https://ai.google.dev/gemini-api/docs/prompting-strategies).
-26. Google. [*Imagen prompt guide*](https://ai.google.dev/gemini-api/docs/imagen#imagen-prompt-guide).
-27. Anthropic. [*Claude prompting best practices*](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices).
+1. Brown, T. B., et al. (2020). [_Language Models are Few-Shot Learners_](https://arxiv.org/abs/2005.14165). _Advances in Neural Information Processing Systems_.
+2. Liu, P., et al. (2023). [_Pre-train, Prompt, and Predict: A Systematic Survey of Prompting Methods in Natural Language Processing_](https://doi.org/10.1145/3560815). _ACM Computing Surveys_, 55(9).
+3. Wei, J., et al. (2022). [_Chain-of-Thought Prompting Elicits Reasoning in Large Language Models_](https://arxiv.org/abs/2201.11903). _Advances in Neural Information Processing Systems_.
+4. Ouyang, L., et al. (2022). [_Training Language Models to Follow Instructions with Human Feedback_](https://proceedings.neurips.cc/paper/2022/hash/b1efde53be364a73914f58805a001731-Abstract.html). _Advances in Neural Information Processing Systems_.
+5. Yao, S., et al. (2023). [_ReAct: Synergizing Reasoning and Acting in Language Models_](https://arxiv.org/abs/2210.03629). _International Conference on Learning Representations_.
+6. Ma, Y., et al. (2024). [_The Death and Life of Great Prompts: Analyzing the Evolution of LLM Prompts from the Structural Perspective_](https://aclanthology.org/2024.emnlp-main.1227/). _Proceedings of EMNLP 2024_.
+7. Zhou, L., et al. (2024). [_Larger and more instructable language models become less reliable_](https://www.nature.com/articles/s41586-024-07930-y). _Nature_, 634, 61-68.
+8. Sclar, M., Choi, Y., Tsvetkov, Y., & Suhr, A. (2024). [_Quantifying Language Models’ Sensitivity to Spurious Features in Prompt Design_](https://proceedings.iclr.cc/paper_files/paper/2024/hash/6c0e99d736da621403018ca7b32b1a4d-Abstract-Conference.html). _International Conference on Learning Representations_.
+9. Zhuo, J., et al. (2024). [_ProSA: Assessing and Understanding the Prompt Sensitivity of LLMs_](https://aclanthology.org/2024.findings-emnlp.108/). _Findings of EMNLP 2024_, 1950-1976.
+10. Ma, Q., et al. (2025). [_What Should We Engineer in Prompts? Training Humans in Requirement-Driven LLM Use_](https://doi.org/10.1145/3731756). _ACM Transactions on Computer-Human Interaction_.
+11. Dhuliawala, S., et al. (2023). [_Chain-of-Verification Reduces Hallucination in Large Language Models_](https://arxiv.org/abs/2309.11495). arXiv preprint.
+12. Lewis, P., et al. (2020). [_Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks_](https://arxiv.org/abs/2005.11401). _Advances in Neural Information Processing Systems_.
+13. Deng, Y., et al. (2023). [_Rephrase and Respond: Let Large Language Models Ask Better Questions for Themselves_](https://arxiv.org/abs/2311.04205). arXiv preprint.
+14. Liu, N. F., et al. (2023). [_Lost in the Middle: How Language Models Use Long Contexts_](https://arxiv.org/abs/2307.03172). arXiv preprint.
+15. Datta, S., Ku, A., Ramachandran, D., & Anderson, P. (2024). [_Prompt Expansion for Adaptive Text-to-Image Generation_](https://aclanthology.org/2024.acl-long.189/). _Proceedings of ACL 2024_, 3449-3476.
+16. Schulhoff, S., et al. (2024). [_The Prompt Report: A Systematic Survey of Prompt Engineering Techniques_](https://arxiv.org/abs/2406.06608). arXiv preprint.
+17. Wang, X., et al. (2023). [_Self-Consistency Improves Chain of Thought Reasoning in Language Models_](https://arxiv.org/abs/2203.11171). _International Conference on Learning Representations_.
+18. Yao, S., et al. (2023). [_Tree of Thoughts: Deliberate Problem Solving with Large Language Models_](https://arxiv.org/abs/2305.10601). _Advances in Neural Information Processing Systems_.
+19. Jiang, H., et al. (2023). [_LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models_](https://aclanthology.org/2023.emnlp-main.825/). _Proceedings of EMNLP 2023_, 13358-13376.
+20. Yang, C., et al. (2023). [_Large Language Models as Optimizers_](https://arxiv.org/abs/2309.03409). arXiv preprint.
+21. Wallace, E., et al. (2024). [_The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions_](https://arxiv.org/abs/2404.13208). arXiv preprint.
+22. OpenAI. [_GPT-5.5 model guidance_](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.5).
+23. OpenAI. [_Latest model guidance_](https://developers.openai.com/api/docs/guides/latest-model).
+24. OpenAI. [_Structured Outputs_](https://openai.com/index/introducing-structured-outputs-in-the-api/).
+25. Google. [_Gemini prompt design strategies_](https://ai.google.dev/gemini-api/docs/prompting-strategies).
+26. Google. [_Imagen prompt guide_](https://ai.google.dev/gemini-api/docs/imagen#imagen-prompt-guide).
+27. Anthropic. [_Claude prompting best practices_](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices).
