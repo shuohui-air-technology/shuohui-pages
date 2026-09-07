@@ -2,7 +2,7 @@
 title: 提示词工程（Prompt engineering）正在死去
 date: 2026-09-04T15:43:00
 math: false
-draft: true
+draft: false
 comments: true
 cover: null
 ---
@@ -17,10 +17,7 @@ cover: null
 
 **让我们举一个简单的例子：我们采用下列的两种提示词，让 ai 帮助我们使用 Python 绘制一份论文的结果图像**
 
-
-
 {{< collapse summary="低精细度提示词" >}}
-
 
 请使用 Python 和 Matplotlib 绘制一张论文实验结果图，概括 Sclar 等人发表于 ICLR 2024 的论文《Quantifying Language Models' Sensitivity to Spurious Features in Prompt Design》关于提示词格式敏感性的主要实验发现。
 
@@ -42,13 +39,10 @@ sclar_low_figure.svg
 
 sclar_low_figure.pdf
 
-
 $$
 
-\int_0^1 x^2\,dx
+\int_0^1 x^2,dx
 
 $$
-
-
 
 {{< /collapse >}}
