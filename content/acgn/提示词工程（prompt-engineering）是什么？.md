@@ -1,5 +1,5 @@
 ---
-title: 什么是提示词工程（Prompt engineering）？它在死去吗？
+title: 什么是提示词工程（Prompt engineering）？
 date: 2026-09-04T15:43:00
 math: false
 draft: false
