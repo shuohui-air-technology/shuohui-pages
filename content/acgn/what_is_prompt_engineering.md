@@ -14,7 +14,7 @@ _我希望通过撰写这份文章来捋清思路。这些内容大多基于我�
 
 **让我们举一个简单的例子：**
 
-Google AI Developers 的 Imagen 提示词指南展示了同一个公园场景在逐步增加提示词细节之后的图片输出。[Imagen prompt guide](https://ai.google.dev/gemini-api/docs/imagen#imagen-prompt-guide)
+Google AI Developers 的 Imagen 提示词指南展示了同一个公园场景在逐步增加提示词细节之后的图片输出。([Imagen prompt guide](https://ai.google.dev/gemini-api/docs/imagen#imagen-prompt-guide))
 
 ### 第一条提示词只说明主体和环境
 
