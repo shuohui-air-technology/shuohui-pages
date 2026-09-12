@@ -1,14 +1,14 @@
 ---
-title: Agent 到底是什么？从模型、工具到 MCP 与 Skill
+title: 什么是 Agent？从模型、工具到 MCP 与 Skill
 slug: what-is-agent
-date: 2026-09-12T22:36:24
+date: 2026-09-12T22:36:00
 math: false
 draft: false
 comments: true
 cover: null
 ---
 
-*我希望通过撰写这份文章来捋清思路，也把最近经常出现的 Agent、MCP、Skill、RAG、Memory 和 Subagent 放回它们各自的位置。这些概念来自论文、协议规范和公开的工程文档，参考资料统一列在文章结尾。*
+_我希望通过撰写这份文章来捋清思路，也把最近经常出现的 Agent、MCP、Skill、RAG、Memory 和 Subagent 放回它们各自的位置。这些概念来自论文、协议规范和公开的工程文档，参考资料统一列在文章结尾。_
 
 ## 先看一个具体任务
 
@@ -28,7 +28,7 @@ cover: null
 
 这句话放进普通的聊天框，模型可能会先解释常见原因，再给出一段修复建议。回答可以写得很完整，仓库、测试和修改结果却还没有真正发生变化。
 
-如果系统要真正完成这项任务，模型就需要不断读取环境信息，再决定下一步：
+### 如果系统要真正完成这项任务，模型就需要不断读取环境信息，再决定下一步
 
 ~~~text
 读取任务与项目背景
@@ -78,13 +78,13 @@ CoALA 论文把语言 Agent 组织为几个相互连接的部分：记忆、行�
 
 ![CoALA 论文中的语言 Agent 架构：从普通语言模型到带有环境反馈、记忆和决策过程的 Agent](https://arxiv.org/html/2309.02427v3/fig1-lang-agent.png)
 
-*图 1｜CoALA 原论文 Figure 1。图中依次展示普通语言模型、与环境交互的语言 Agent，以及能够管理内部状态和推理过程的认知语言 Agent。三者的差别，体现在环境交互、内部状态管理和推理过程逐步加入系统。来源：[Cognitive Architectures for Language Agents](https://arxiv.org/abs/2309.02427)。*
+_图 1｜CoALA 原论文 Figure 1。图中依次展示普通语言模型、与环境交互的语言 Agent，以及能够管理内部状态和推理过程的认知语言 Agent。三者的差别，体现在环境交互、内部状态管理和推理过程逐步加入系统。来源：_[_Cognitive Architectures for Language Agents_](https://arxiv.org/abs/2309.02427)_。_
 
 ## Agent 和 Workflow 有什么区别？
 
 Anthropic 把 Workflow 解释为由预先写好的代码路径组织模型和工具，把 Agent 解释为由模型动态决定过程和工具使用。
 
-固定流程可以写成这样：
+### 固定流程可以写成这样
 
 ~~~text
 先调用 OCR
@@ -94,7 +94,7 @@ Anthropic 把 Workflow 解释为由预先写好的代码路径组织模型和工
 
 每个步骤的顺序由程序提前写好。模型可以负责某一步的内容生成，但整体路径已经确定。
 
-Agent 的路径更像这样：
+### Agent 的路径更像这样
 
 ~~~text
 先查看文件
@@ -171,7 +171,7 @@ RAG 关注怎样把外部资料检索出来并加入当前生成过程。Memory 
 
 ![RAG 原论文中的检索增强生成架构](https://ar5iv.labs.arxiv.org/html/2005.11401/assets/RAG-Architecture.svg)
 
-*图 2｜RAG 原论文 Figure 1。该架构将检索器、文档索引和生成模型连接在一起。来源：[Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)。*
+_图 2｜RAG 原论文 Figure 1。该架构将检索器、文档索引和生成模型连接在一起。来源：_[_Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks_](https://arxiv.org/abs/2005.11401)_。_
 
 RAG 解决的是“需要时从外部资料中取回什么”。如果问题变成“上下文太长时，系统怎样保存和移动已有信息”，就进入记忆管理的范围。
 
@@ -189,6 +189,7 @@ MemGPT 把有限上下文看成一种需要管理的工作内存，并通过分�
 {
   "name": "run_tests",
   "arguments": {
+
     "path": "tests/test_import.py"
   }
 }
@@ -218,13 +219,13 @@ SWE-agent 还说明，模型与计算机之间的接口本身就是系统设计�
 
 假设一个 Agent 需要查询数据库。模型本身没有数据库连接，运行时也需要一种统一方式知道有哪些查询工具、参数怎样填写、结果怎样返回。MCP 处理的就是这部分连接问题，它是一套让 Agent 发现和连接外部工具、数据与提示模板的开放协议。
 
-一次 MCP 连接通常会涉及三个角色：
+### 一次 MCP 连接通常会涉及三个角色
 
 - Host：承载模型和整体应用；
 - Client：代表 Host 与某一个 MCP Server 建立连接；
 - Server：向 Client 暴露工具、资源和提示模板。
 
-当前 MCP 规范将服务端的三类核心 primitives（原语）概括为：
+### 当前 MCP 规范将服务端的三类核心 primitives（原语）概括为
 
 - Tools：模型可以调用的动作；
 - Resources：应用可以读取并放入上下文的数据；
@@ -252,7 +253,7 @@ Skill 的内核仍然是一份 Markdown 文件。普通 Markdown 文件主要供
 
 “skill”可以泛指可复用的任务方法；Agent Skills 指一种目录和 `SKILL.md` 格式；具体产品还可能采用自己的加载规则。Skill 本身不会凭空创造文件、网络或数据库权限。它可以指导 Agent 使用现有工具，也可以附带脚本和模板，但这些资源最终能否执行，仍由 Harness、工具和权限环境决定。
 
-以代码审查为例，一个 Skill 可能会把检查步骤写成这样：
+### 以代码审查为例，一个 Skill 可能会把检查步骤写成这样
 
 ~~~text
 任务目标：检查代码变更中的逻辑错误和测试遗漏
@@ -264,7 +265,7 @@ Skill 的内核仍然是一份 Markdown 文件。普通 Markdown 文件主要供
 
 ![Agent Skills 的渐进式披露示意图](https://www.anthropic.com/_next/image?q=75&url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2Fa3bca2763d7892982a59c28aa4df7993aaae55ae-2292x673.jpg&w=3840)
 
-*图 3｜Skill 的渐进式披露。Agent 先接触目录和概要信息，再按任务需要加载 SKILL.md 以及附加资料。来源：[Equipping agents for the real world with Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)。*
+_图 3｜Skill 的渐进式披露。Agent 先接触目录和概要信息，再按任务需要加载 SKILL.md 以及附加资料。来源：_[_Equipping agents for the real world with Agent Skills_](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)_。_
 
 渐进式披露的关键在于分阶段加载信息。Agent 第一次只需要知道 Skill 的名称和用途，例如“代码仓库审查”。当当前任务确实属于代码修复或代码审查时，它再读取完整的 `SKILL.md`，了解任务顺序、输出要求和检查条件。只有在需要某个辅助脚本或参考资料时，相关文件才继续进入上下文。
 
@@ -344,7 +345,7 @@ Multi-Agent System 关注多个 Agent 如何分工、通信和汇总。例如，
 
 A2A 面向彼此不了解内部实现的 Agent。它们可以通过协议发现能力、发送消息、跟踪任务和交换结果。Agent Card、Task、Message 和 Artifact，分别用于描述能力、记录任务、传递消息和承载结果。
 
-三种连接关系可以这样区分：
+### 三种连接关系可以这样区分
 
 ~~~text
 Agent ↔ Tool / Data：MCP
@@ -367,7 +368,7 @@ Subagent 是执行关系，Multi-Agent 是系统架构，A2A 是跨 Agent 通信
 
 先看“清理临时文件”这个任务。Agent 可能有读取项目目录的 Permission，却没有删除生产目录的权限；即使某个删除工具可以被调用，Approval 也可以要求用户先确认目标路径。Guardrail 可以检查命令是否包含危险目录，Sandbox 可以把清理动作限制在临时副本中。Prompt Injection 可能来自 README、网页或工具返回内容，试图诱导 Agent 偏离原任务；Tool Poisoning 也可能通过恶意工具描述或返回结果影响模型判断。
 
-后面的术语分别对应权限、安全控制、运行记录和结果评价：
+### 后面的术语分别对应权限、安全控制、运行记录和结果评价
 
 - Permission：允许访问哪些资源；
 - Approval：哪些动作需要人确认；
@@ -391,24 +392,29 @@ Anthropic 对 Agent 评测的拆解把任务、试次、评分器、轨迹和最
 
 ![Agent 评测的组成：任务、工具、环境、运行轨迹和评分器](https://www.anthropic.com/_next/image?q=75&url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2Fbd42e7b2f3e9bb5218142796d3ede4816588dec0-4584x2834.png&w=3840)
 
-*图 4｜Agent 评测结构。复杂评测同时观察任务输入、工具调用、环境变化、运行轨迹和最终评分。来源：[Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)。*
+_图 4｜Agent 评测结构。复杂评测同时观察任务输入、工具调用、环境变化、运行轨迹和最终评分。来源：_[_Demystifying evals for AI agents_](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)_。_
 
 Agent 系统与普通聊天界面的差别，可以从结果检查中看出来。一句“已经完成”只是一段文本，文件、代码、数据库或任务状态的实际变化才是可以核对的结果。
 
 ## 把这些概念放回一个 Agent 系统
 
-可以把它们画成下面这样的分层关系：
+### 可以把它们画成下面这样的分层关系
 
 ~~~text
 任务与验收：用户目标、成功条件、Verification
         │
+
         ├─ 系统形态与编排：Model、Agent、Workflow
         │
+
         ├─ 决策方法：Planning、ReAct、Reflection
         │
+
         ├─ 运行基础：Agent Loop、Harness、Context Engineering
+
         │      └─ Session、History、Memory、RAG
         │
+
         ├─ 能力接口：Tool、Function Calling、Schema
         │      └─ MCP 等外部能力连接协议
         │
@@ -416,6 +422,7 @@ Agent 系统与普通聊天界面的差别，可以从结果检查中看出来�
         │
         ├─ 协作架构与协议：Multi-Agent、A2A
         │
+
         └─ 执行控制：Environment、Sandbox、Permission、Approval、Guardrail
 
 运行过程中持续产生：Trace；任务结束时形成 Outcome；跨任务比较依靠 Eval
