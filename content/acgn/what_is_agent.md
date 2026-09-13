@@ -8,27 +8,31 @@ comments: true
 cover: null
 ---
 
-_我希望通过撰写这份文章来捋清思路，也把最近经常出现的 Agent、MCP、Skill、RAG、Memory 和 Subagent 放回它们各自的位置。这些概念来自论文、协议规范和公开的工程文档，参考资料统一列在文章结尾。_
+# 什么是 Agent？模型、工具、上下文、MCP、Skill 与协作系统
 
-## 先看一个具体任务
+*这篇文章撰写的内容更加详细，它的相当一部分内容是我接触甚多，但在详细查询资料之前也仅仅一知半解的。我通过这篇文章彻底理清了它们，因此这篇文章的内容也将适合与我有类似心理的人，我们希望使用 ai，但在此基础上，做得比这更好应该成为我们共同的愿望。*
 
-**让我们举一个简单的例子：**
+## 出于习俗，让我们继续这样引入
+
+**一个简单的例子：**
 
 我们让一个 AI 帮忙修复代码仓库中的一个 bug。
 
 {{< collapse summary="用户给出的任务" >}}
 
 ~~~text
-请检查这个项目中导致 CSV 文件导入失败的问题，
+请检查这个项目中导致 CSV（Comma-Separated Values，逗号分隔值）文件导入失败的问题，
 定位原因，修改代码，运行相关测试，
 最后告诉我修改了哪些文件以及测试结果。
 ~~~
 
 {{< /collapse >}}
 
-这句话放进普通的聊天框，模型可能会先解释常见原因，再给出一段修复建议。回答可以写得很完整，仓库、测试和修改结果却还没有真正发生变化。
+如果聊天环境没有接入项目文件和执行工具，模型通常会先解释常见原因，再给出一段修复建议。它能够围绕问题生成回答，却无法自动读取本地仓库、修改文件并把结果写回项目；聊天产品一旦提供文件、终端或代码工具，系统边界就会随之扩展。
 
-### 如果系统要真正完成这项任务，模型就需要不断读取环境信息，再决定下一步
+但让我们试想这样一种可能：如果模型能够直接参与这项任务，它应该怎么做才能达成这样的效果？
+
+如果系统要真正完成这项任务，模型就需要不断读取环境信息，再决定下一步：
 
 ~~~text
 读取任务与项目背景
@@ -46,55 +50,71 @@ _我希望通过撰写这份文章来捋清思路，也把最近经常出现的 
 报告最终结果与留下的文件
 ~~~
 
-这条流程里的输入会随着任务推进而变化。任务要求、项目规则、文件内容和测试结果，会在不同阶段进入上下文。模型根据当前看到的材料提出下一步，运行时执行这个动作，再把结果送回上下文。下一轮判断就建立在上一轮行动留下的信息上。
-
-回到这个任务，模型要判断下一步该做什么，工具负责读取文件和运行测试，上下文保存已经获得的信息。每次行动结束后，结果都会进入下一轮判断。权限和沙箱限制能够执行的操作，验证则检查修改是否满足任务要求。
+这条流程里的输入会随着任务推进而变化。任务要求、项目规则、文件内容和测试结果，会在不同阶段进入上下文。
+模型根据当前看到的材料提出下一步，由运行时执行相应动作，再把结果送回上下文。
+而下一轮判断又建立在上一轮行动留下的信息上。
 
 **后文提到的模型、工具、上下文和运行时，都会参与这条循环。**
 
+看完这个例子后，让我们回到正题：
+
 ## 什么是 Agent？
 
-在这篇文章里，我把 Agent 作为一种工作定义：它以语言模型或多模态模型为决策核心，读取上下文，选择下一步动作，调用工具，再根据环境反馈继续运行。
+能够完成上述任务的产品是一种 Agent,即**代理**,代我们完成某事的一种产品。Agent 在不同环境下经常有着细微的语义上的差别，例如：
 
-CoALA 论文把语言 Agent 组织为几个相互连接的部分：记忆、行动空间和决策过程。OpenAI 的工程指南也把模型、工具和指令列为 Agent 的基本组成，并进一步讨论编排、状态和护栏。
+从研究框架看，CoALA（Cognitive Architectures for Language Agents，语言 Agent 的认知架构）将语言 Agent 描述为由模块化记忆、结构化行动空间和通用决策过程组成的系统。行动空间既包括对内部记忆的操作，也包括与外部环境交互的动作。
 
-把刚才的任务拆开，可以看到几个不同的问题。下面几项不属于同一层级，它们只是从一次任务中可以分别观察到的角色和过程：
+从工程实现看，OpenAI 的实用指南把最基本的 Agent 拆成 Model、Tools 和 Instructions：模型负责推理与决策，工具扩展系统的行动能力，指令规定系统的行为方式。
+
+本文采用一个便于后文讨论的工作定义：
+
+**Agent 以语言模型或多模态模型为决策核心，读取上下文，选择下一步动作，调用工具，再根据环境反馈继续运行。**
+
+
+一次 Agent 任务通常按照这样的过程运行：
 
 ~~~text
-模型：下一步可以怎么想、怎么表达
-工具：下一步可以做什么
-上下文：下一步能够看到什么
-循环：下一步什么时候继续
-环境：行动会改变什么
-验证：当前任务是否满足条件
-评测：系统在一组任务上的整体表现
+当前上下文
+    ↓
+模型根据上下文决定下一步
+    ↓
+工具执行读取、搜索、修改或测试等动作
+    ↓
+环境发生变化并返回新的结果
+    ↓
+结果进入更新后的上下文
+    ↓
+模型继续决定下一步，直到验证任务是否完成
 ~~~
+
+评测不属于这次执行循环本身；它在一组任务和评分标准上观察 Agent 的整体完成情况。
 
 仍然以 CSV 导入失败为例。第一次调用时，模型可能只看到用户的任务、项目目录和测试命令，于是提出“读取导入函数”的工具请求。运行时执行读取操作，把函数内容放回上下文。模型看到代码后，可能发现解析器把带引号的字段处理错了，再提出运行某个测试或查看样例文件的请求。测试结果返回之后，模型才有条件决定应该修改代码，还是继续收集信息。
 
-模型的输出可能直接展示给用户，也可能交给运行时执行。文件是否改变，取决于运行时是否允许工具执行这个请求；工具结果返回后，模型再决定下一步。
+模型的输出可能直接展示给用户，也可能交给运行时处理。文件是否改变，取决于运行时是否允许工具执行这个请求；工具结果返回后，模型再决定下一步。
+这种“模型提出动作、运行时执行动作、结果回到模型”的往返，才让任务从一次回答变成持续运行的过程。
 
 模型负责主要的判断和生成，Agent 的实际表现还取决于工具、上下文、权限和运行时怎样组合。文件权限、网络访问、数据库连接和长期记忆，都需要由运行时另外提供。
 
 ![CoALA 论文中的语言 Agent 架构：从普通语言模型到带有环境反馈、记忆和决策过程的 Agent](https://arxiv.org/html/2309.02427v3/fig1-lang-agent.png)
 
-_图 1｜CoALA 原论文 Figure 1。图中依次展示普通语言模型、与环境交互的语言 Agent，以及能够管理内部状态和推理过程的认知语言 Agent。三者的差别，体现在环境交互、内部状态管理和推理过程逐步加入系统。来源：_[_Cognitive Architectures for Language Agents_](https://arxiv.org/abs/2309.02427)_。_
+*图 1｜CoALA 原论文 Figure 1。图中依次展示普通语言模型、与环境交互的语言 Agent，以及能够管理内部状态和推理过程的认知语言 Agent。三者的差别，体现在环境交互、内部状态管理和推理过程逐步加入系统。来源：[Cognitive Architectures for Language Agents](https://arxiv.org/abs/2309.02427)。*
 
 ## Agent 和 Workflow 有什么区别？
 
-Anthropic 把 Workflow 解释为由预先写好的代码路径组织模型和工具，把 Agent 解释为由模型动态决定过程和工具使用。
+在 Anthropic 的官方工程文章《Building Effective AI Agents》中，Workflow 被定义为由预先写好的代码路径组织模型和工具的系统；Agent 则由模型在运行过程中动态决定下一步过程和工具使用。
 
-### 固定流程可以写成这样
+例如，一份扫描文档的固定 Workflow 可以预先规定：先识别文字，再判断文档类别，最后生成摘要。
 
 ~~~text
-先调用 OCR
+先调用 OCR（Optical Character Recognition，光学字符识别）
 再调用分类器
 最后调用摘要模型
 ~~~
 
 每个步骤的顺序由程序提前写好。模型可以负责某一步的内容生成，但整体路径已经确定。
 
-### Agent 的路径更像这样
+Agent 的路径更像这样：
 
 ~~~text
 先查看文件
@@ -116,25 +136,23 @@ Agent 的下一步取决于上一轮返回了什么。真实系统经常把这�
 
 模型可以提出工具调用请求，也可以读取工具返回的结构化结果。真正执行函数的是运行时，工具结果随后会回到下一轮上下文。
 
-Function Calling 就是这样工作的：模型输出符合规定格式的调用请求，程序执行对应函数，再把结果返回给模型。
+Function Calling（函数调用）就是这样工作的：模型输出符合规定格式的调用请求，程序执行对应函数，再把结果返回给模型。
 
 一次 Function Calling 会经过三个角色。模型读取工具说明，生成“调用哪个工具、传入哪些参数”的请求。运行时检查工具名称、参数结构、权限和审批条件，再决定是否执行。工具完成动作后，把成功结果或错误信息返回给运行时，运行时再将结果放进下一轮上下文。
 
 所以，模型输出合法 JSON，只能说明它生成了一份符合格式的请求。工具是否执行成功，还要看运行时检查和真实环境的结果。
 
-Tool Schema 和 [Structured Output](https://openai.com/index/introducing-structured-outputs-in-the-api/) 都可能使用 JSON Schema，但它们约束的对象不同。Tool Schema 主要规定模型怎样提出一次工具调用，例如 `run_tests` 需要哪些参数。Structured Output 主要规定模型生成的结构化输出应具有怎样的字段和结构。在 `response_format` 场景下，它通常用于约束最终回答，也可以用于工具调用中的结构化参数。前者位于“准备行动”的接口上，后者通常位于“交付结果”的接口上。
+Tool Schema（工具模式）和 [Structured Output（结构化输出）](https://openai.com/index/introducing-structured-outputs-in-the-api/) 都可能使用 JSON Schema（用于描述 JSON 字段、类型和约束的格式），但它们约束的对象不同。Tool Schema 主要规定模型怎样提出一次工具调用，例如 `run_tests` 需要哪些参数。Structured Output 主要规定模型生成的结构化输出应具有怎样的字段和结构。在 `response_format` 场景下，它通常用于约束最终回答；在工具调用场景中，也可以通过函数参数的 Schema 和严格模式约束调用参数。前者位于“准备行动”的接口上，后者通常位于“交付结果”的接口上。
 
 在 CSV 任务中，模型可能返回类似“调用 `run_tests`，参数是 `tests/test_import.py`”的结构化请求。这个请求只是模型对下一步的建议，真正的运行时还要检查工具名称是否存在、参数是否符合 Schema、当前会话是否有权限执行，以及这个动作是否需要用户确认。检查通过后，运行时才会调用测试程序。
 
 工具执行也可能失败。参数路径不存在时，运行时可以返回参数错误；测试失败时，工具可以返回失败日志；测试通过时，工具可以返回通过状态和相关输出。运行时把这些结果作为新的上下文交给模型，模型再决定修复代码、调整参数、继续读取文件，或者结束任务。
 
-Function Calling 让模型用结构化请求参与执行循环，真正的函数调用仍由运行时完成。Toolformer 进一步研究了模型怎样选择工具、决定调用时机、组织参数并吸收返回结果。工具使用因此成为语言模型研究中的一个独立问题。
-
 工具选择本身也会影响任务结果。同一个模型既可能先读取源代码，再运行测试，也可能一开始就调用测试工具。前一种路径通常能先建立项目背景，后一种路径更快获得失败信息。模型能否选对动作，取决于运行时、工具描述和任务上下文。因此，工具调用需要和这些部分一起设计。
 
 ### Agent Loop 和 Harness
 
-Agent Loop 是“观察上下文、选择行动、读取结果、继续运行”的控制循环。要让这个循环真正跑起来，还需要 Harness。本文把 Harness 用作一个工程概念，指承载 Agent 循环的运行时支架。它可以连接模型、工具、上下文、权限、审批和日志，具体实现不一定包含全部功能。Agent Loop 描述循环怎样运行，Harness 描述这套循环由什么系统承载。Agent SDK 或 Framework 通常提供创建这类运行时的开发接口。
+Agent Loop 是“观察上下文、选择行动、读取结果、继续运行”的控制循环。要让这个循环真正跑起来，还需要 Harness。本文把 Harness 用作一个工程概念，指承载 Agent 循环的运行时支架。它可以连接模型、工具、上下文、权限、审批和日志，不同实现覆盖的功能不同。Agent Loop 描述循环怎样运行，Harness 描述这套循环由什么系统承载。Agent SDK 或 Framework 通常提供创建这类运行时的开发接口。
 
 在 CSV 修复任务中，Harness 可以先创建一次会话，把用户要求、项目规则和可用工具交给模型。模型请求读取导入函数后，Harness 检查这个读取动作是否在权限范围内，调用文件工具，再把文件内容标记为工具结果并放回上下文。之后每一次模型调用、工具调用、错误返回和人工确认，都可以由 Harness 记录下来。任务结束时，它还可以整理出一份运行轨迹，供用户查看或供评测系统使用。
 
@@ -149,7 +167,7 @@ Agent Loop 是“观察上下文、选择行动、读取结果、继续运行”
 - 其他 Agent 留下的摘要；
 - 之前的错误、测试结果和中间决策。
 
-Anthropic 把持续选择、组织、压缩和更新这些信息的工作称为 Context Engineering。它处理的内容包括系统指令、工具说明、外部资料、对话历史和记忆，范围比一段提示词更大。
+Anthropic 在《Effective Context Engineering for AI Agents》一文中，将持续选择、组织、压缩和更新这些信息的工作称为 Context Engineering。它处理的内容包括系统指令、工具说明、外部资料、对话历史和记忆，范围比一段提示词更大。
 
 资料已经存在，并不意味着模型这一轮就能看到它。上下文长度有限，运行时需要决定哪些内容保留，哪些内容截断，哪些内容压缩成摘要，哪些内容重新排列或检索后注入。CSV 任务中的项目规则、导入函数、测试失败信息和上一次修改结果，只有被选入当前上下文，才会参与下一步判断。
 
@@ -161,9 +179,9 @@ Anthropic 把持续选择、组织、压缩和更新这些信息的工作称为 
 
 ### Session、History 和 Memory
 
-这几个词描述的是不同范围的信息。Session 指一次任务或会话的运行范围，History 记录其中产生的消息和事件，Memory 保存之后还可能继续调用的信息。Context 则只指模型当前这一轮真正收到的输入。
+为了便于说明 Agent 的运行过程，本文把这几个词区分为不同范围的信息。Session 指一次任务或会话的运行范围，History 记录其中产生的消息和事件，Memory 保存之后还可能继续调用的信息。Context 则只指模型当前这一轮真正收到的输入。
 
-RAG 关注怎样把外部资料检索出来并加入当前生成过程。Memory 关注一项信息是否需要被保存，以及之后还要使用多久。两者可以同时出现：知识库文档可以通过 RAG 进入上下文，长期记忆也可以借助相似的检索方法被取回。区分它们时，可以同时观察信息的用途、保存周期和取回方式。
+RAG（Retrieval-Augmented Generation，检索增强生成）关注怎样把外部资料检索出来并加入当前生成过程。Memory 关注一项信息是否需要被保存，以及之后还要使用多久。两者可以同时出现：知识库文档可以通过 RAG 进入上下文，长期记忆也可以借助相似的检索方法被取回。区分它们时，可以同时观察信息的用途、保存周期和取回方式。
 
 这次 CSV 修复从开始到结束属于一个 Session。期间产生的用户消息、模型判断、工具调用和测试结果属于 History。模型这一轮真正收到的内容，则属于当前 Context。
 
@@ -171,11 +189,11 @@ RAG 关注怎样把外部资料检索出来并加入当前生成过程。Memory 
 
 ![RAG 原论文中的检索增强生成架构](https://ar5iv.labs.arxiv.org/html/2005.11401/assets/RAG-Architecture.svg)
 
-_图 2｜RAG 原论文 Figure 1。该架构将检索器、文档索引和生成模型连接在一起。来源：_[_Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks_](https://arxiv.org/abs/2005.11401)_。_
+*图 2｜RAG 原论文 Figure 1。该架构将检索器、文档索引和生成模型连接在一起。来源：[Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)。*
 
 RAG 解决的是“需要时从外部资料中取回什么”。如果问题变成“上下文太长时，系统怎样保存和移动已有信息”，就进入记忆管理的范围。
 
-MemGPT 把有限上下文看成一种需要管理的工作内存，并通过分层记忆和数据移动来处理超出上下文窗口的内容。对 Agent 来说，记忆就是保存信息，在需要时取回，再放进当前上下文。
+MemGPT 论文把有限上下文看成一种需要管理的工作内存，并通过分层记忆和数据移动来处理超出上下文窗口的内容。对 Agent 来说，记忆就是保存信息，在需要时取回，再放进当前上下文。
 
 ## Agent 的手：Tool、Schema 和执行环境
 
@@ -189,7 +207,6 @@ MemGPT 把有限上下文看成一种需要管理的工作内存，并通过分�
 {
   "name": "run_tests",
   "arguments": {
-
     "path": "tests/test_import.py"
   }
 }
@@ -205,35 +222,37 @@ MemGPT 把有限上下文看成一种需要管理的工作内存，并通过分�
 
 工具提供动作，环境承载动作发生后的状态。
 
-SWE-agent 把语言模型当作一种新的软件使用者，并为它设计 Agent-Computer Interface，使它能够浏览代码仓库、编辑文件、运行测试和执行程序。这个研究关注的也包括模型与计算机之间的接口。
+以 SWE-agent 这项软件工程 Agent 研究为例，作者把语言模型当作一种新的软件使用者，并为它设计了 Agent-Computer Interface（Agent 与计算机之间的操作接口），使它能够浏览代码仓库、编辑文件、运行测试和执行程序。
 
 如果工具能够执行代码、读写文件或访问网络，运行时还需要提供 Sandbox 和权限边界。Permission 决定 Agent 可以访问什么，Approval 决定哪些动作需要人确认，Sandbox 决定动作在哪个受控环境中发生。
 
-这三种控制共同约束一次行动，Guardrail 还可以检查输入、模型输出、工具参数或交接结果。
+这三种控制共同约束一次行动，Guardrail（护栏或约束检查）还可以检查输入、模型输出、工具参数或交接结果。
 
 以删除文件为例，Agent 可能有读取项目文件的 Permission，却没有删除权限；即使 Approval 已确认删除，Sandbox 仍然决定动作发生在真实项目、临时副本还是受限容器中。
 
-SWE-agent 还说明，模型与计算机之间的接口本身就是系统设计的一部分。模型能否看到清晰的目录结果、能否用合适的命令编辑文件、能否及时获得测试反馈，都会影响它的下一步判断。工具名称本身不会自动带来可靠的 Agent 行为，接口返回的信息是否足够清楚同样重要。
+这项研究还说明，模型与计算机之间的接口本身就是系统设计的一部分。模型能否看到清晰的目录结果、能否用合适的命令编辑文件、能否及时获得测试反馈，都会影响它的下一步判断。Agent 的可靠性还取决于接口返回的信息是否清楚。
 
 ## MCP 是什么？
 
-假设一个 Agent 需要查询数据库。模型本身没有数据库连接，运行时也需要一种统一方式知道有哪些查询工具、参数怎样填写、结果怎样返回。MCP 处理的就是这部分连接问题，它是一套让 Agent 发现和连接外部工具、数据与提示模板的开放协议。
+假设一个 Agent 需要查询数据库。模型本身没有数据库连接，运行时也需要一种统一方式知道有哪些查询工具、参数怎样填写、结果怎样返回。MCP（Model Context Protocol，模型上下文协议）处理的就是这部分连接问题。它是一套让 Agent 发现和连接外部工具、数据与提示模板的开放协议。
 
-### 一次 MCP 连接通常会涉及三个角色
+一次 MCP 连接通常会涉及三个角色：
 
 - Host：承载模型和整体应用；
 - Client：代表 Host 与某一个 MCP Server 建立连接；
 - Server：向 Client 暴露工具、资源和提示模板。
 
-### 当前 MCP 规范将服务端的三类核心 primitives（原语）概括为
+当前 MCP 规范将服务端的三类核心 primitives（原语）概括为：
 
 - Tools：模型可以调用的动作；
 - Resources：应用可以读取并放入上下文的数据；
 - Prompts：可以由用户选择的预定义提示模板。
 
-以数据库查询为例，调用过程是这样的。Agent 启动时，Host 让 MCP Client 连接数据库 Server。Client 先获取 Server 提供的工具和资源说明，再把这些能力交给运行时。
+这三类原语由不同一方控制：Tools 通常由模型决定是否调用，Resources 由应用决定何时读取并加入上下文，Prompts 通常由用户或应用选择。
 
-模型看到“可以执行 SQL 查询”以及对应参数后，决定调用某个工具。Client 把调用请求转交给 Server，Server 访问数据库并返回结果，结果再回到模型的上下文中。
+以数据库查询为例，调用过程是这样的。Agent 启动时，Host 让 MCP Client 与数据库 Server 建立连接。Client 通过协议获取 Server 的能力声明和可用列表，Host 或运行时再决定哪些工具提供给模型、哪些资源加入上下文，以及哪些提示模板展示给用户。
+
+模型看到“可以执行 SQL（Structured Query Language，结构化查询语言）查询”以及对应参数后，决定调用某个工具。Client 把调用请求转交给 Server，Server 访问数据库并返回结果，结果再回到模型的上下文中。
 
 这次调用中，Host 承载应用，Client 负责连接，Server 提供数据库能力。Tools、Resources 和 Prompts 分别对应动作、资料和提示模板。
 
@@ -243,17 +262,50 @@ MCP 把能力发现、参数传递和结果返回标准化，却不会自动保�
 
 ## Skill 是什么？
 
-Skill 是一份可以按需加载的岗位手册。它把完成一类任务所需的指令、背景知识、脚本、参考资料、模板和检查步骤组织在一起。
+Skill 有两层常见含义。广义上，它是一套可复用的任务方法；在 Agent Skills 规范中，它特指以目录和 `SKILL.md` 文件组织起来的一套格式。为了便于理解，可以先把它看成一份可以按需加载的岗位手册：它把完成一类任务所需的指令、背景知识、脚本、参考资料、模板和检查步骤组织在一起。
 
-Agent Skills 的开放规范要求 Skill 目录包含一个 SKILL.md 文件，也允许附带 scripts、references 和 assets。规范还采用渐进式披露：Agent 先看到 Skill 的名称和描述，确定需要使用后，再加载完整说明和相关资源。
+按照 Agent Skills 规范，一个 Skill 首先是一个目录。目录中必须有一个 `SKILL.md`，还可以根据任务需要放入脚本、参考资料和其他资源。一个代码审查 Skill 可能长这样：
 
-Skill 的内核仍然是一份 Markdown 文件。普通 Markdown 文件主要供人阅读，项目规则文件主要告诉协作者应该遵守什么；Skill 则额外拥有名称、描述、目录位置和可选资源等运行时约定，Agent 可以先根据描述判断是否需要它，再加载完整的 `SKILL.md`、脚本和参考资料。Skill 的作用取决于它能否被 Agent 发现、按需加载，并在执行过程中与工具、脚本、参考资料和检查步骤组合起来。文件后缀和文字数量本身并不能决定它怎样工作。
+~~~text
+code-review/
+├── SKILL.md              # 必需：Skill 的说明和执行方法
+├── scripts/              # 可选：辅助脚本
+├── references/           # 可选：需要时查阅的文档
+└── assets/               # 可选：模板、图片或数据文件
+~~~
+
+这里最重要的文件是 `SKILL.md`。它由两部分组成：文件开头的 YAML frontmatter，以及后面的 Markdown 指令正文。YAML 是一种用键和值记录信息的文本格式；在这里，它承担“告诉 Agent 这份 Skill 是什么、什么时候应该使用”的职责。Markdown 正文承担“使用 Skill 时具体怎么做”的职责。
+
+一个最小的 `SKILL.md` 可以写成这样：
+
+~~~markdown
+---
+name: code-review
+description: Review code changes for logic errors and missing tests. Use when reviewing a code change.
+---
+
+# Code review
+
+1. Read the project rules.
+2. Inspect the changes.
+3. Run the relevant tests.
+~~~
+
+开头和结尾的 `---` 标记出 YAML frontmatter 的范围。`name` 是 Skill 的机器可读名称，按照规范需要与目录名匹配，并使用适合目录和检索的命名方式。`description` 用一句话说明 Skill 能完成什么任务，以及什么情况下应该使用它。Agent 可以先读取这两项信息，判断当前任务是否与代码审查有关。
+
+第二个 `---` 后面的内容就是 Markdown 正文。它可以写任务目标、执行顺序、输入和输出示例、常见错误、检查标准，以及何时读取某个辅助脚本或参考资料。正文越具体，Agent 在执行任务时需要自行猜测的部分就越少。规范还允许在 YAML 中加入 `license`、`compatibility`、`metadata` 和实验性的 `allowed-tools` 等可选字段，用来说明许可、运行环境、其他元数据，以及预先允许使用的工具。即使 Skill 声明了 `allowed-tools`，它也不能单独扩大运行时的权限边界，工具最终能否执行仍由运行环境检查。
+
+这就构成了 Skill 的渐进式披露过程：
+
+1. **发现阶段**：宿主或运行时先读取 Skill 的元数据，再把 `name` 和 `description` 提供给模型；模型据此判断它是否与当前任务相关；
+2. **激活阶段**：任务确实需要代码审查时，Agent 再加载完整的 `SKILL.md`，读取检查顺序、输出格式和验收条件；
+3. **资源阶段**：正文要求生成变更摘要或查阅编码规范时，Agent 才继续读取 `scripts/` 或 `references/` 中的文件。
+
+这样安排可以让 Agent 在任务无关时只接触简短的元数据，在任务相关时再加载完整方法，最后按需读取更具体的资料。Skill 因此同时具有目录结构、机器可读的元数据、任务执行说明和可选资源这几层内容。
 
 例如，普通的 `README.md` 可以介绍一个项目怎样使用；代码审查 Skill 则可以规定先读取哪些规则、再检查哪些文件、运行哪些测试，以及最后采用什么格式报告结果。
 
-“skill”可以泛指可复用的任务方法；Agent Skills 指一种目录和 `SKILL.md` 格式；具体产品还可能采用自己的加载规则。Skill 本身不会凭空创造文件、网络或数据库权限。它可以指导 Agent 使用现有工具，也可以附带脚本和模板，但这些资源最终能否执行，仍由 Harness、工具和权限环境决定。
-
-### 以代码审查为例，一个 Skill 可能会把检查步骤写成这样
+以代码审查为例，一个 Skill 可能会把检查步骤写成这样：
 
 ~~~text
 任务目标：检查代码变更中的逻辑错误和测试遗漏
@@ -265,15 +317,15 @@ Skill 的内核仍然是一份 Markdown 文件。普通 Markdown 文件主要供
 
 ![Agent Skills 的渐进式披露示意图](https://www.anthropic.com/_next/image?q=75&url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2Fa3bca2763d7892982a59c28aa4df7993aaae55ae-2292x673.jpg&w=3840)
 
-_图 3｜Skill 的渐进式披露。Agent 先接触目录和概要信息，再按任务需要加载 SKILL.md 以及附加资料。来源：_[_Equipping agents for the real world with Agent Skills_](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)_。_
+*图 3｜Skill 的渐进式披露。Agent 先接触目录和概要信息，再按任务需要加载 SKILL.md 以及附加资料。来源：[Equipping agents for the real world with Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)。*
 
-渐进式披露的关键在于分阶段加载信息。Agent 第一次只需要知道 Skill 的名称和用途，例如“代码仓库审查”。当当前任务确实属于代码修复或代码审查时，它再读取完整的 `SKILL.md`，了解任务顺序、输出要求和检查条件。只有在需要某个辅助脚本或参考资料时，相关文件才继续进入上下文。
+渐进式披露的关键在于分阶段加载信息。在支持这种机制的实现中，首次加载阶段通常只需要知道 Skill 的名称和用途，例如“代码仓库审查”。当当前任务确实属于代码修复或代码审查时，运行时再加载完整的 `SKILL.md`，让模型了解任务顺序、输出要求和检查条件。只有在需要某个辅助脚本或参考资料时，相关文件才继续进入上下文。
 
 假设当前任务是修复 CSV 导入问题，一个代码审查 Skill 可能要求先读取项目规则，再检查导入函数，然后运行相关测试；如果测试失败，还要记录失败用例和修改位置。Skill 改变的是任务执行顺序和检查标准。Tool 提供“读取文件”或“运行测试”的动作，Skill 决定这些动作应该怎样组合，最终输出则按照 Skill 规定的格式返回。
 
-Tool 提供动作，Skill 规定这些动作怎样组合成一类任务的执行方法。它是否能直接访问文件、网络或终端，则取决于运行时实现。
+Tool 提供动作，Skill 规定这些动作怎样组合成一类任务的执行方法。文件、网络或终端能否访问，由运行时决定。
 
-在具体 Agent 平台中，项目规则文件、Skill、Hook 和 Plugin 通常承担不同作用。项目规则文件，例如 `AGENTS.md`，记录目录、测试和构建约定。Skill 组织任务方法，Hook 响应生命周期事件，Plugin 则常用于打包和分发 Skill、Hook、Agent 配置或 MCP 配置。
+在一些具体 Agent 平台中，项目规则文件、Skill、Hook 和 Plugin 通常承担不同作用。项目规则文件，例如 `AGENTS.md`，记录目录、测试和构建约定；Skill 组织任务方法；Hook 是在会话创建、工具调用或任务结束等生命周期事件发生时触发的逻辑；Plugin 则是把一组能力或配置打包、分发的扩展单元。
 
 它们的共同点是都可以影响 Agent 的运行过程，作用方式却不同。规则文件提供约束，Skill 提供任务方法，Hook 响应事件，Plugin 负责组织和分发配置。这些名称在不同平台中的实现可能不同。
 
@@ -281,7 +333,7 @@ Tool 提供动作，Skill 规定这些动作怎样组合成一类任务的执行
 
 ## Agent 如何决定下一步？
 
-### Planning 和 Task Decomposition
+### Planning（规划）和 Task Decomposition（任务分解）
 
 复杂任务通常需要拆成若干子目标。修复一个 bug 可能包含定位入口、重现问题、检查相关逻辑、修改代码、运行测试和总结结果。
 
@@ -291,7 +343,7 @@ Planning 可以由程序预先规定，也可以由模型在运行过程中生�
 
 ### ReAct：推理和行动交错
 
-ReAct 把推理轨迹和外部行动交织起来。模型先形成当前判断，再执行动作，随后根据环境返回结果更新行动计划。
+ReAct（Reasoning and Acting，推理与行动）把推理轨迹和外部行动交织起来。模型先形成当前判断，再执行动作，随后根据环境返回结果更新行动计划。
 
 ~~~text
 判断：需要先确认导入函数的输入格式
@@ -301,13 +353,13 @@ ReAct 把推理轨迹和外部行动交织起来。模型先形成当前判断�
 行动：运行单个测试并查看失败信息
 ~~~
 
-ReAct 可以运行在 Agent Loop 中，为模型提供“判断、行动、观察、再判断”的处理方式。Agent Loop 是运行机制，ReAct 是其中一种决策方法。模型不必一次猜中完整方案，它可以利用行动获得新的信息。
+ReAct 可以运行在 Agent Loop 中，为模型提供“判断、行动、观察、再判断”的处理方式。Agent Loop 是运行机制，ReAct 是其中一种决策方法。模型可以利用行动获得新的信息。
 
-在 CSV 修复任务中，ReAct 的“行动”可以是读取文件、搜索字段名或运行一个测试，“观察”则是工具返回的代码片段、搜索结果和失败日志。模型根据这些观察更新判断，再提出下一步行动。它不需要在第一次调用时就写出最终修复方案，外部环境提供的信息会参与后续决策。
+在 CSV 修复任务中，ReAct 的“行动”可以是读取文件、搜索字段名或运行一个测试，“观察”则是工具返回的代码片段、搜索结果和失败日志。模型根据这些观察更新判断，再提出下一步行动。
 
-### Reflection 和 Verification
+### Reflection（反思）和 Verification（验证）
 
-Reflection 让 Agent 根据反馈总结错误，并把总结用于后续决策。Reflexion 论文让 Agent 把任务反馈转化为语言形式的反思，再保存到情节记忆中，供之后的尝试使用。
+Reflection（反思）让 Agent 根据反馈总结错误，并把总结用于后续决策。Reflexion 则是一个具体的方法和论文框架，它让 Agent 把任务反馈转化为语言形式的反思，再保存到情节记忆中，供之后的尝试使用。两者承担相近的功能，但指代范围不同。
 
 Verification 更关注结果是否满足条件。它可以表现为运行测试、检查文件是否生成、核对引用、比较数据库状态，或让另一个模型审查结果。
 
@@ -317,23 +369,23 @@ Reflection 产生的自我解释还需要外部证据来核对。在代码任务
 
 测试失败后，Agent 可以记录“当前修改只处理了逗号分隔文件，没有覆盖带引号字段”，这属于 Reflection。再次运行测试、检查目标文件是否生成、确认所有相关用例通过，则属于 Verification。前者帮助系统更新判断，后者检查任务结果是否满足条件。
 
-CoT、CoVe、Tree of Thoughts 和 Self-Consistency 都属于模型推理或输出控制方法。CoT 让模型把一个问题展开为连续的中间步骤。Tree of Thoughts 保留多个候选推理路径，再对这些路径进行比较。Self-Consistency 针对同一个问题生成多条推理路径，再根据结果的一致性选择答案。CoVe 则先列出初稿中的事实断言，再逐项检查和修订。
+CoT（Chain-of-Thought，思维链）、CoVe（Chain-of-Verification，验证链）、Tree of Thoughts（思维树）和 Self-Consistency（自洽性采样）都是可选的模型级推理或输出控制方法。CoT 让模型把一个问题展开为连续的中间步骤。Tree of Thoughts 保留多个候选推理路径，再对这些路径进行比较。Self-Consistency 针对同一个问题生成多条推理路径，再根据结果的一致性选择答案。CoVe 则先生成初稿，再根据其中的事实断言规划核验问题，独立回答这些问题，最后据此生成经过核验的答案。
 
-它们改变的是模型处理一次问题的方式，属于方法层。MCP、Skill 和 A2A 处理连接、能力封装和 Agent 间通信，处于不同层级。
+它们改变的是模型处理一次问题的方式，属于方法层。MCP、Skill 和 A2A（Agent-to-Agent，Agent 间通信协议）处理连接、能力封装和 Agent 间通信，处于不同层级。
 
 放回 CSV 修复任务中，Planning 负责安排“先定位、再修改、最后测试”的任务流程。CoT 处理模型在某一步怎样展开判断。Tree of Thoughts 可以比较“修改解析器”和“修改输入预处理”两条路径。Self-Consistency 可以为同一个判断生成多条推理路径，再根据候选结果的一致性进行选择。CoVe 则适合核对最终报告中的文件名、测试结果和修改说明。在这个任务里，Planning 组织整体流程，CoT、Tree of Thoughts、Self-Consistency 和 CoVe 作用于具体判断，工具和协议则决定 Agent 能接触什么、执行什么。
 
 ## Subagent、Multi-Agent 和 A2A
 
-### Subagent：一种常见的隔离执行方式
+### Subagent(子代理)
 
-在许多 Agent 平台中，Subagent 由主 Agent 委派任务，并使用单独创建或由主 Agent 提供的上下文。只要一个子任务能够相对独立地完成，例如资料筛选、代码审查或测试运行，就可以采用这种方式。
+在许多 Agent 平台中，Subagent(子代理)由主 Agent 委派任务，并使用单独创建或由主 Agent 提供的上下文。只要一个子任务能够相对独立地完成，例如资料筛选、代码审查或测试运行，就可以采用这种方式。
 
 独立上下文可以减少主 Agent 的信息负担，也可以让不同执行单元使用不同的工具和权限。
 
-主 Agent 可以把“检查 CSV 导入测试”连同相关文件和检查标准交给 Subagent。Subagent 在自己的上下文中读取文件、运行测试，最后返回一份摘要或问题清单。这个上下文可以是独立创建的，也可以是主 Agent 筛选后提供的；它使用什么模型、工具和权限，则由具体运行时决定。主 Agent 再把结果加入自己的上下文，决定是否修改代码。它返回的是一段经过独立处理的任务结果，不只是一次简单的文件读取或函数调用。
+主 Agent 可以把“检查 CSV 导入测试”连同相关文件和检查标准交给 Subagent。Subagent 在自己的上下文中读取文件、运行测试，最后返回一份摘要或问题清单。这个上下文可以是独立创建的，也可以是主 Agent 筛选后提供的；它使用什么模型、工具和权限，则由具体运行时决定。主 Agent 再把结果加入自己的上下文，决定是否修改代码。它返回一段经过独立处理的任务结果。
 
-### Multi-Agent 是一种系统架构
+### Multi-Agent
 
 Multi-Agent System 关注多个 Agent 如何分工、通信和汇总。例如，一个 Agent 负责规划，另一个负责搜索，第三个负责审查结果。
 
@@ -341,11 +393,13 @@ Multi-Agent System 关注多个 Agent 如何分工、通信和汇总。例如，
 
 如果主 Agent 临时委派一次“检查测试文件”的任务，这更接近 Subagent。若系统长期设计为多个 Agent 分别负责规划、搜索和审查，并规定它们之间的通信和汇总方式，就进入了 Multi-Agent System 的范围。前者强调一次任务中的执行隔离，后者强调整个系统的分工结构。
 
-### A2A 是 Agent 与 Agent 之间的协议
+### A2A
 
-A2A 面向彼此不了解内部实现的 Agent。它们可以通过协议发现能力、发送消息、跟踪任务和交换结果。Agent Card、Task、Message 和 Artifact，分别用于描述能力、记录任务、传递消息和承载结果。
+A2A（Agent-to-Agent，Agent 间通信协议）面向彼此不了解内部实现的 Agent。它们可以通过协议发现能力、发送消息、跟踪任务和交换结果。Agent Card、Task、Message 和 Artifact，分别用于描述能力、记录任务、传递消息和承载结果。
 
-### 三种连接关系可以这样区分
+除了连接工具和其他 Agent，Agent 还需要把运行状态和结果传递给用户界面。AG-UI（Agent–User Interaction Protocol，Agent—用户交互协议）是一种面向 Agent 与用户界面的事件传递协议。
+
+三种连接关系可以这样区分：
 
 ~~~text
 Agent ↔ Tool / Data：MCP
@@ -354,21 +408,20 @@ Agent ↔ User / UI：AG-UI
 ~~~
 
 一个 Agent 可以通过 MCP 使用数据库，也可以通过 A2A 委派给另一个远程 Agent。前者连接能力，后者连接执行系统。
-这里的 AG-UI 指一种连接 Agent 与用户界面应用的开放协议方向，它是具体协议的例子，不代表所有 Agent 产品都采用同一种界面协议。
 
 在一次远程协作中，主 Agent 可以先通过 Agent Card 了解远程 Agent 能处理什么任务，再创建一个 Task。双方通过 Message 传递请求和进度，远程 Agent 完成后返回 Artifact，例如测试报告或代码审查结果。主 Agent 再根据结果决定是否继续推进任务。MCP 把请求发给工具或数据服务，A2A 把请求发给另一个 Agent。两者都包含能力发现、请求和结果返回，但协作对象不同。
 
-在用户界面一侧，AG-UI 一类协议可以把 Agent 的运行状态、工具调用进度和最终结果传回界面。它关注的是 Agent 状态怎样呈现给用户，任务本身怎样执行仍由 Agent Runtime 负责。
+在用户界面一侧，这类协议可以把 Agent 的运行状态、工具调用进度和最终结果传回界面。它关注的是 Agent 状态怎样呈现给用户，任务本身怎样执行仍由 Agent Runtime 负责。
 
-Subagent 是执行关系，Multi-Agent 是系统架构，A2A 是跨 Agent 通信协议。本地 Subagent 可以由同一个 Harness 调度，不使用 A2A；Multi-Agent 系统也可以通过共享数据库或消息队列通信。采用 A2A 只能说明系统支持跨 Agent 交换任务和结果，分工是否合理、结果是否准确仍要单独评估。
+Subagent 是执行关系，Multi-Agent 是系统架构，A2A 是跨 Agent 通信协议。本地 Subagent 可以由同一个 Harness 调度，不使用 A2A；Multi-Agent 系统也可以通过共享数据库或消息队列通信。
 
 ## 安全、轨迹和评测
 
 当 Agent 开始调用工具并改变外部状态，安全问题就同时落到回答内容和实际操作上。
 
-先看“清理临时文件”这个任务。Agent 可能有读取项目目录的 Permission，却没有删除生产目录的权限；即使某个删除工具可以被调用，Approval 也可以要求用户先确认目标路径。Guardrail 可以检查命令是否包含危险目录，Sandbox 可以把清理动作限制在临时副本中。Prompt Injection 可能来自 README、网页或工具返回内容，试图诱导 Agent 偏离原任务；Tool Poisoning 也可能通过恶意工具描述或返回结果影响模型判断。
+先看“清理临时文件”这个任务。Agent 可能有读取项目目录的 Permission，却没有删除生产目录的权限；即使某个删除工具可以被调用，Approval 也可以要求用户先确认目标路径。Guardrail（护栏或约束检查）可以检查命令是否包含危险目录，Sandbox 可以把清理动作限制在临时副本中。Prompt Injection 可能来自 README、网页或工具返回内容，试图诱导 Agent 偏离原任务；Tool Poisoning 也可能通过恶意工具描述或返回结果影响模型判断。前者强调外部内容伪装成指令，后者强调工具接口或数据来源被污染。
 
-### 后面的术语分别对应权限、安全控制、运行记录和结果评价
+本文按这些名称在 Agent 运行中的工程功能区分：
 
 - Permission：允许访问哪些资源；
 - Approval：哪些动作需要人确认；
@@ -384,37 +437,34 @@ Subagent 是执行关系，Multi-Agent 是系统架构，A2A 是跨 Agent 通信
 
 模型返回“清理完成”后，系统仍能根据这些记录检查它访问了哪些目录、执行了哪些命令，以及文件是否真的达到预期状态。
 
-当 Agent 能够真实执行动作，评测就需要同时观察回答、运行路径和环境状态。AgentBench 把 Agent 放进多个交互环境中评测，同时观察连续决策、环境反馈和指令遵循。
+当 Agent 能够真实执行动作，评测就需要同时观察回答、运行路径和环境状态。AgentBench 是一个面向 Agent 的多环境评测基准，它把 Agent 放进多个交互环境中，观察连续决策、环境反馈和指令遵循。
 
-Anthropic 对 Agent 评测的拆解把任务、试次、评分器、轨迹和最终结果分别列出来，为这种多阶段评测提供了更清楚的组织方式。
+在 Anthropic 的《Demystifying Evals for AI Agents》中，作者将任务、试次、评分器、轨迹和最终结果分别列出，为这种多阶段评测提供了更清楚的组织方式。
+
+在这里，任务是要完成的目标，试次是一次完整运行，评分器把运行轨迹或最终状态映射为分数，轨迹记录执行过程，最终结果表示任务结束时环境达到的状态。
 
 一次 CSV 修复的 Trace 可以记录模型读过哪些文件、调用过哪些工具、运行过几次测试，以及每次测试返回了什么。Outcome 关注任务结束时项目是否真的被修改、测试是否通过、目标文件是否能够正常导入。Eval 再根据一组任务和评分规则，比较不同 Agent 版本的成功率、错误类型、运行成本和稳定性。单次任务的验证回答“这次是否完成”，系统评测回答“这个版本在一批任务上表现如何”。
 
 ![Agent 评测的组成：任务、工具、环境、运行轨迹和评分器](https://www.anthropic.com/_next/image?q=75&url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2Fbd42e7b2f3e9bb5218142796d3ede4816588dec0-4584x2834.png&w=3840)
 
-_图 4｜Agent 评测结构。复杂评测同时观察任务输入、工具调用、环境变化、运行轨迹和最终评分。来源：_[_Demystifying evals for AI agents_](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)_。_
+*图 4｜Agent 评测结构。复杂评测同时观察任务输入、工具调用、环境变化、运行轨迹和最终评分。来源：[Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)。*
 
 Agent 系统与普通聊天界面的差别，可以从结果检查中看出来。一句“已经完成”只是一段文本，文件、代码、数据库或任务状态的实际变化才是可以核对的结果。
 
 ## 把这些概念放回一个 Agent 系统
 
-### 可以把它们画成下面这样的分层关系
+前面介绍的这些组件、运行机制和协作协议，可以放回同一个 Agent 系统中观察：
 
 ~~~text
 任务与验收：用户目标、成功条件、Verification
         │
-
         ├─ 系统形态与编排：Model、Agent、Workflow
         │
-
         ├─ 决策方法：Planning、ReAct、Reflection
         │
-
         ├─ 运行基础：Agent Loop、Harness、Context Engineering
-
         │      └─ Session、History、Memory、RAG
         │
-
         ├─ 能力接口：Tool、Function Calling、Schema
         │      └─ MCP 等外部能力连接协议
         │
@@ -422,11 +472,12 @@ Agent 系统与普通聊天界面的差别，可以从结果检查中看出来�
         │
         ├─ 协作架构与协议：Multi-Agent、A2A
         │
-
         └─ 执行控制：Environment、Sandbox、Permission、Approval、Guardrail
 
 运行过程中持续产生：Trace；任务结束时形成 Outcome；跨任务比较依靠 Eval
 ~~~
+
+这张图按功能分层展示概念之间的关系，可以把它理解为一张概念地图：Model 是 Agent 使用的决策模型；Agent 是把模型、工具、上下文和运行时组合起来的系统；Workflow 则表示其中一种预先编排的任务路径。
 
 运行时，Context Engineering 组织每轮输入，MCP 连接工具和外部数据，Permission、Approval、Guardrail 与 Trace 贯穿调用过程，Eval 根据运行记录和最终 Outcome 检查系统表现。
 
@@ -434,7 +485,7 @@ Agent 系统与普通聊天界面的差别，可以从结果检查中看出来�
 
 ## 参考资料
 
-本文将学术论文、协议规范和官方工程文档统一编号。MCP、Agent Skills 和 A2A 都有公开的协议或格式资料，但它们的实现方式和生态仍在快速演化，具体术语以对应规范为准。
+本文将学术论文、协议规范和官方工程文档统一编号，MCP、Agent Skills 和 A2A 的协议与格式资料也收录在参考资料中。
 
 1. Wang, L., et al. (2023). [A Survey on Large Language Model based Autonomous Agents](https://arxiv.org/abs/2308.11432).
 2. Sumers, T. R., Yao, S., Narasimhan, K., & Griffiths, T. L. (2024). [Cognitive Architectures for Language Agents](https://arxiv.org/abs/2309.02427).
@@ -447,7 +498,7 @@ Agent 系统与普通聊天界面的差别，可以从结果检查中看出来�
 9. Liu, X., et al. (2023). [AgentBench: Evaluating LLMs as Agents](https://arxiv.org/abs/2308.03688).
 10. Guo, T., et al. (2024). [Large Language Model based Multi-Agents: A Survey of Progress and Challenges](https://arxiv.org/abs/2402.01680).
 11. Anthropic. [Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents).
-12. OpenAI. [A Practical Guide to Building AI Agents](https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/).
+12. OpenAI. [A Practical Guide to Building AI Agents](https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf).
 13. Model Context Protocol. [Server Features, MCP Specification](https://modelcontextprotocol.io/specification/2025-11-25/server/index).
 14. Agent Skills. [Specification](https://agentskills.io/specification).
 15. A2A Project. [A2A Protocol Specification](https://github.com/a2aproject/A2A/blob/main/docs/specification.md).
