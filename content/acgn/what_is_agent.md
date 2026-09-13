@@ -1,5 +1,5 @@
 ---
-title: 什么是 Agent？从模型、工具到 MCP 与 Skill
+title: 什么是 Agent？模型、工具、上下文、MCP、Skill 与协作系统
 slug: what-is-agent
 date: 2026-09-12T22:36:00
 math: false
@@ -7,8 +7,6 @@ draft: false
 comments: true
 cover: null
 ---
-
-# 什么是 Agent？模型、工具、上下文、MCP、Skill 与协作系统
 
 *这篇文章撰写的内容更加详细，它的相当一部分内容是我接触甚多，但在详细查询资料之前也仅仅一知半解的。我通过这篇文章彻底理清了它们，因此这篇文章的内容也将适合与我有类似心理的人，我们希望使用 ai，但在此基础上，做得比这更好应该成为我们共同的愿望。*
 
