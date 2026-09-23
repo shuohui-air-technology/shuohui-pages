@@ -1,7 +1,7 @@
 ---
 title: 什么是 Agent？脚手架（harness）、上下文(context engineering)、MCP、Skill 与协作系统
 slug: what-is-agent
-date: 2026-09-12T22:36:00
+date: 2026-09-23T08:54:00
 math: false
 draft: false
 comments: true
