@@ -8,23 +8,32 @@ function complete(block) {
   const start = /^\s*(`{3,}|~{3,})/.exec(lines[0]);
   return !start || (lines.length > 1 && new RegExp(`^\\s*${start[1][0]}{${start[1].length},}\\s*$`).test(lines.at(-1)));
 }
+const previewDOM = new WeakMap();
 class PreviewWidget extends WidgetType {
   constructor(block, render, read) { super(); this.block = block; this.render = render; this.read = read; }
-  eq(other) { return this.block.source === other.block.source && this.block.from === other.block.from && this.read === other.read && this.render === other.render; }
+  eq(other) { return this.block.source === other.block.source && this.block.referenceKey === other.block.referenceKey && this.block.from === other.block.from && this.read === other.read && this.render === other.render; }
   toDOM(view) {
     const root = view.dom.ownerDocument.createElement('div');
     root.className = 'shuohui-block';
     root.dataset.sourceFrom = this.block.from;
     root.dataset.sourceTo = this.block.to;
     root.innerHTML = this.render(this.block);
+    previewDOM.set(root, this);
     root.addEventListener('mousedown', event => {
       // Toggle native details/summary without turning a UI action into a source edit.
       if (this.read || event.target.closest('summary')) return;
       event.preventDefault();
-      view.dispatch({ selection: { anchor: this.block.from }, scrollIntoView: true });
+      view.dispatch({ selection: { anchor: Number(root.dataset.sourceFrom) }, scrollIntoView: true });
       view.focus();
     });
     return root;
+  }
+  updateDOM(root) {
+    const previous = previewDOM.get(root);
+    if (!previous || previous.block.source !== this.block.source || previous.block.referenceKey !== this.block.referenceKey || previous.render !== this.render || previous.read !== this.read) return false;
+    root.dataset.sourceFrom = this.block.from; root.dataset.sourceTo = this.block.to;
+    previewDOM.set(root, this);
+    return true;
   }
   ignoreEvent() { return true; }
 }

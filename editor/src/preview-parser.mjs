@@ -65,6 +65,7 @@ function collapseBlock(state, line, endLine, silent) {
   if (!summary) return false;
   let depth = 1, fence = null, last;
   for (last = line + 1; last < endLine; last++) {
+    if (state.sCount[last] - state.blkIndent >= 4) continue;
     const current = state.src.slice(state.bMarks[last] + state.tShift[last], state.eMarks[last]);
     const marker = /^(`{3,}|~{3,})(.*)$/.exec(current);
     if (marker) {
@@ -93,9 +94,9 @@ export function createMarkdownParser({ getAsset = value => value } = {}) {
   const math = (content, display) => `<span class="shuohui-math${display ? ' shuohui-math-block' : ''}" data-math-source="${md.utils.escapeHtml(content)}" data-math-display="${display}">${md.utils.escapeHtml((display ? '$$' : '$') + content + (display ? '$$' : '$'))}</span>`;
   md.renderer.rules.math_inline = (tokens, i) => math(tokens[i].content, tokens[i].meta.display);
   md.renderer.rules.math_block = (tokens, i) => math(tokens[i].content, true) + '\n';
-  md.renderer.rules.collapse = (tokens, i) => {
+  md.renderer.rules.collapse = (tokens, i, _options, env) => {
     const token = tokens[i];
-    return `<details${token.meta.open ? ' open' : ''}><summary>${md.renderInline(token.meta.summary)}</summary>${md.render(token.content)}</details>\n`;
+    return `<details${token.meta.open ? ' open' : ''}><summary>${md.renderInline(token.meta.summary, env)}</summary>${md.render(token.content, env)}</details>\n`;
   };
   const image = md.renderer.rules.image;
   md.renderer.rules.image = (tokens, i, options, env, renderer) => {
@@ -112,13 +113,15 @@ const parser = createMarkdownParser();
 export function parsePreviewBlocks(source) {
   const starts = [0];
   for (const match of source.matchAll(/\r\n|\n|\r/g)) starts.push(match.index + match[0].length);
-  const tokens = parser.parse(source, {});
+  const env = {};
+  const tokens = parser.parse(source, env);
+  const referenceKey = JSON.stringify(env.references ?? {});
   return tokens.filter(token => token.level === 0 && token.map).map(token => {
     const from = starts[token.map[0]] ?? source.length;
     let to = starts[token.map[1]] ?? source.length;
     // The separating line ending stays in the document, not a hidden widget.
     if (source.slice(from, to).endsWith('\r\n')) to -= 2;
     else if (/[\r\n]$/.test(source.slice(from, to))) to--;
-    return { from, to, kind: token.type.replace(/_open$/, ''), source: source.slice(from, to) };
+    return { from, to, kind: token.type.replace(/_open$/, ''), source: source.slice(from, to), references: env.references, referenceKey };
   });
 }

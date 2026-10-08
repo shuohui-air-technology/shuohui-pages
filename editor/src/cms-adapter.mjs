@@ -7,6 +7,8 @@ import { attachWritingLayout } from './layout-adapter.mjs';
 import { insertMedia } from './media-insertion.mjs';
 import { readPreferences, writePreferences } from './preferences.mjs';
 import { buildOutline } from './outline.mjs';
+import { Text } from '@codemirror/state';
+import { mountSourceFallback } from './source-fallback.mjs';
 
 let runtimeLoader;
 const entryId = props => `${props.entry?.get('collection') ?? ''}:${props.entry?.get('path') ?? 'new'}`;
@@ -48,11 +50,12 @@ export function mountEditor({ root, props }) {
     }
     scheduler.setVisible(visible);
   }
-  const doc = createDocument({ parent: host, value: initialSource, preferences, extensions: createLivePreview({ getBlocks: parsePreviewBlocks, renderBlock: block => renderReading(block.source, { getAsset }).html }), onChange(value) {
+  const doc = createDocument({ parent: host, value: initialSource, preferences, extensions: createLivePreview({ getBlocks: parsePreviewBlocks, renderBlock: block => renderReading(block.source, { getAsset, references: block.references }).html }), onChange(value) {
     version++; scheduler.invalidate(version);
     if (legacy && !legacyWarned) { legacyWarned = true; legacy = null; status.textContent = '本篇原有自动排版将不再套用，请检查发布预览'; }
     latest.onChange(value); refreshMath();
   } });
+  doc.setReadonly(props.readonly);
   doc.view.contentDOM.id = props.forID ?? '';
   doc.view.contentDOM.setAttribute('aria-label', '正文源码');
   for (const [name, value] of [['spellcheck', 'false'], ['autocorrect', 'off'], ['autocapitalize', 'off']]) doc.view.contentDOM.setAttribute(name, value);
@@ -64,10 +67,11 @@ export function mountEditor({ root, props }) {
   const menu = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = '更多'; menu.append(summary); toolbar.append(menu);
   button('插入图片', async () => { try { await insertMedia({ view: doc.view, pickFile: latest.pickFile, addFile: latest.addFile, entryId: identity, getEntryId: () => alive ? entryId(latest) : null }); } catch { status.textContent = '图片插入失败，正文已保留；可重试'; } }, menu);
   button('插入折叠内容', () => {
-    if (mode === 'read' || doc.isComposing()) return;
+    if (doc.view.state.readOnly || doc.isComposing()) return;
     const selection = doc.view.state.selection.main, selected = doc.view.state.sliceDoc(selection.from, selection.to);
-    const insert = `{{< collapse summary="查看详细内容" >}}${doc.view.state.lineBreak}${doc.view.state.lineBreak}${selected}${doc.view.state.lineBreak}${doc.view.state.lineBreak}{{< /collapse >}}`;
-    doc.view.dispatch({ changes: { from: selection.from, to: selection.to, insert }, selection: { anchor: selection.from + 45 }, userEvent: 'input.shortcode' }); doc.view.focus();
+    const prefix = '{{< collapse summary="查看详细内容" >}}\n\n';
+    const insert = prefix + selected.replace(/\r\n/g, '\n') + '\n\n{{< /collapse >}}';
+    doc.view.dispatch({ changes: { from: selection.from, to: selection.to, insert: Text.of(insert.split('\n')) }, selection: { anchor: selection.from + prefix.length }, userEvent: 'input.shortcode' }); doc.view.focus();
   }, menu);
   for (const [name, text] of [['continueLists', '续接列表'], ['pairBrackets', '括号配对']]) {
     const label = document.createElement('label'), input = document.createElement('input'); input.type = 'checkbox'; input.checked = preferences[name];
@@ -101,6 +105,7 @@ export function mountEditor({ root, props }) {
     doc,
     update(next) {
       latest = next;
+      doc.setReadonly(next.readonly);
       if (doc.syncValue(String(next.value ?? '')) === 'conflict') { status.textContent = '检测到外部正文差异，未覆盖当前输入；请确认后采用'; adopt.hidden = false; }
       if (!mathEnabled()) { version++; scheduler.invalidate(version); } refreshMath();
       for (const image of root.querySelectorAll('img[data-source-path]')) { const value = getAsset(image.dataset.sourcePath); if (image.getAttribute('src') !== value) image.setAttribute('src', value); }
@@ -116,16 +121,10 @@ export function registerEditor(CMS) {
     const identity = entryId(props);
     React.useLayoutEffect(() => {
       try { editor.current = mountEditor({ root: root.current, props: latest.current }); }
-      catch {
-        // A failed optional display component must not leave an empty body control.
-        const input = document.createElement('textarea'); input.value = String(latest.current.value ?? '');
-        const newline = input.value.includes('\r\n') ? '\r\n' : '\n';
-        input.addEventListener('input', () => latest.current.onChange(input.value.replace(/\r\n/g, '\n').replace(/\n/g, newline)));
-        root.current.replaceChildren(document.createTextNode('源码模式：预览初始化失败，正文已保留'), input);
-      }
+      catch { editor.current = mountSourceFallback({ root: root.current, props: latest.current }); }
       return () => { editor.current?.destroy(); editor.current = null; };
     }, [identity]);
-    React.useLayoutEffect(() => { editor.current?.update(props); }, [props.value, props.entry, props.getAsset]);
+    React.useLayoutEffect(() => { editor.current?.update(props); }, [props.value, props.entry, props.getAsset, props.readonly]);
     return React.createElement('div', { ref: root, className: 'shuohui-writing' });
   }
   CMS.registerFieldType('source-markdown', Control);

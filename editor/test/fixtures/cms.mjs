@@ -2,12 +2,17 @@ import { readFileSync } from 'node:fs';
 import { parse, stringify } from 'yaml';
 import { expect } from '@playwright/test';
 
-export async function openCMS(page, files, { missingEditor = false, compatibility } = {}) {
+export async function openCMS(page, files, { missingEditor = false, compatibility, mathjax = false, onMathJaxDownload = () => {} } = {}) {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   const config = parse(readFileSync(new URL('../../../static/admin/config.yml', import.meta.url), 'utf8'));
   config.backend = { name: 'test-repo' }; config.locale = 'en';
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
+    if (mathjax && url.hostname === 'cdn.jsdelivr.net' && url.pathname.startsWith('/npm/mathjax@3.2.2/es5/')) {
+      const path = url.pathname.split('/es5/')[1];
+      if (path === 'tex-mml-chtml.js') onMathJaxDownload();
+      return route.fulfill({ body: readFileSync(new URL('../../node_modules/mathjax/es5/' + path, import.meta.url)), headers: { 'access-control-allow-origin': '*' }, contentType: path.endsWith('.js') ? 'application/javascript' : 'font/woff' });
+    }
     if (url.pathname === '/test-empty') return route.fulfill({ body: '<!doctype html><html><body></body></html>', contentType: 'text/html' });
     if (url.origin === 'http://127.0.0.1:8765') {
       if (compatibility && url.pathname === '/admin/editor/compatibility-preview.json') return route.fulfill({ json: compatibility });

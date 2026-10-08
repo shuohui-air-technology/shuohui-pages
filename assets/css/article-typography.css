@@ -1,0 +1,11 @@
+/* Match this owner's Codex content font, not its separate code font. */
+.post-single {
+    font-family: "LXGW WenKai Mono", -apple-system,
+        BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+}
+
+/* Keep PaperMod's code typography separate from prose inheritance. */
+.post-single code,
+.post-single pre {
+    font-family: monospace;
+}

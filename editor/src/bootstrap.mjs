@@ -13,7 +13,7 @@ async function start() {
       const original = String(props.value ?? ''), newline = original.includes('\r\n') ? '\r\n' : '\n';
       return React.createElement('div', { className: 'shuohui-writing' },
         React.createElement('p', { role: 'status' }, '源码模式：编辑器加载失败，正文已保留；刷新可重试'),
-        React.createElement('textarea', { id: props.forID, value: original, 'aria-label': '正文源码', spellCheck: false, autoCorrect: 'off', autoCapitalize: 'off', onChange: event => props.onChange(event.target.value.replace(/\r\n/g, '\n').replace(/\n/g, newline)) }));
+        React.createElement('textarea', { id: props.forID, value: original, readOnly: props.readonly, 'aria-label': '正文源码', spellCheck: false, autoCorrect: 'off', autoCapitalize: 'off', onChange: event => props.onChange(event.target.value.replace(/\r\n/g, '\n').replace(/\n/g, newline)) }));
     }
     CMS.registerFieldType('source-markdown', SourceFallback);
     CMS.registerFieldType('public-slug', CMS.getFieldType('string').control);

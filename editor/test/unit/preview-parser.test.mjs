@@ -67,3 +67,17 @@ test('real_articles_keep_tables_fences_and_math_in_reading_preview', () => {
 test('soft_line_break_matches_goldmark_instead_of_forcing_br', () => {
   assert.equal(render('line 1\nline 2'), '<p>line 1\nline 2</p>\n');
 });
+test('indented_code_does_not_close_collapse', () => {
+  const html = render('{{< collapse summary="outer" >}}\n\n    {{< /collapse >}}\n\ninside\n\n{{< /collapse >}}');
+  const root = window.document.createElement('div'); root.innerHTML = html;
+  assert.equal(root.querySelector('details code').textContent.trim(), '{{< /collapse >}}');
+  assert.equal(root.querySelector('details p').textContent, 'inside');
+  assert.equal(root.querySelectorAll('details').length, 1);
+});
+test('block_preview_keeps_global_reference_definitions', () => {
+  const source = 'Text [site][ref].\n\n![image][img]\n\n[ref]: https://example.com\n[img]: /images/photo.png';
+  const blocks = api.parsePreviewBlocks(source);
+  const html = reading.renderReading(blocks[0].source, { window, references: blocks[0].references }).html;
+  assert.ok(html.includes('href="https://example.com"'));
+  assert.ok(reading.renderReading(blocks[1].source, { window, references: blocks[1].references }).html.includes('src="/images/photo.png"'));
+});

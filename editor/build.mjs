@@ -13,7 +13,8 @@ const main = await build({ absWorkingDir: editorRoot, entryPoints: ['src/index.m
 const boot = await build({ absWorkingDir: editorRoot, entryPoints: ['src/bootstrap.mjs'], bundle: true, write: false, minify: true, format: 'iife', target: 'es2022', legalComments: 'inline', metafile: true, define: { __EDITOR_VERSION__: JSON.stringify(hash(main.outputFiles[0].contents)) } });
 const assets = new Map([['editor.js', main.outputFiles[0].contents], ['bootstrap.js', boot.outputFiles[0].contents], ['editor.css', await readFile(join(editorRoot, 'src/editor.css'))]]);
 const packages = new Map();
-for (const input of Object.keys({ ...main.metafile.inputs, ...boot.metafile.inputs })) {
+const bundledInputs = [main, boot].flatMap(result => Object.values(result.metafile.outputs).flatMap(output => Object.entries(output.inputs).filter(([, detail]) => detail.bytesInOutput > 0).map(([name]) => name)));
+for (const input of new Set(bundledInputs)) {
   if (!input.includes('node_modules/')) continue;
   let path = dirname(resolve(editorRoot, input));
   for (;;) {

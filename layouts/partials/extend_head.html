@@ -1,3 +1,9 @@
+{{- if .IsPage -}}
+  {{- $font := resources.Get "css/fonts/lxgw-wenkai-mono-1.522.css" -}}
+  {{- $typography := resources.Get "css/article-typography.css" -}}
+  {{- $articleCSS := slice $font $typography | resources.Concat "css/article-typography.css" | minify | fingerprint -}}
+<link rel="stylesheet" data-article-typography href="{{ $articleCSS.RelPermalink }}" integrity="{{ $articleCSS.Data.Integrity }}" crossorigin="anonymous">
+{{- end -}}
 {{- $needsMath := or .Params.math site.Params.math -}}
 {{- if and (not $needsMath) .IsSection -}}
   {{- $mathPages := where .RegularPages "Params.math" true -}}

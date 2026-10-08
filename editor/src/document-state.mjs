@@ -1,7 +1,8 @@
-import { Annotation, Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
+import { Annotation, Compartment, EditorState, StateEffect, StateField, Text } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { markdown } from '@codemirror/lang-markdown';
+import { markdownLanguage } from '@codemirror/lang-markdown';
+import { LanguageSupport } from '@codemirror/language';
 import { createAssistance } from './input-assistance.mjs';
 
 export const modeEffect = StateEffect.define();
@@ -13,10 +14,11 @@ const externalChange = Annotation.define();
 export function createDocument({ parent, value, onChange, preferences, extensions = [] }) {
   const source = String(value ?? '');
   const mode = new Compartment(), assistance = new Compartment(), preview = new Compartment(), eol = new Compartment();
-  let dirty = false, destroyed = false, restoreFocus = false;
+  let dirty = false, destroyed = false, restoreFocus = false, permissionReadOnly = false;
+  const modeExtensions = read => [EditorState.readOnly.of(read || permissionReadOnly), EditorView.editable.of(!read && !permissionReadOnly)];
   const view = new EditorView({ parent, state: EditorState.create({ doc: source, extensions: [
     eol.of(source.includes('\r\n') ? EditorState.lineSeparator.of('\r\n') : []),
-    history(), markdown({ addKeymap: false }), EditorView.lineWrapping,
+    history(), new LanguageSupport(markdownLanguage), EditorView.lineWrapping,
     modeState, compositionState, mode.of([]), assistance.of(createAssistance(preferences)), preview.of(extensions),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     EditorView.domEventHandlers({
@@ -32,7 +34,7 @@ export function createDocument({ parent, value, onChange, preferences, extension
   ] }) });
   function applyValue(next) {
     // Normalize only CM's internal line structure; serialization uses the incoming convention.
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next.replace(/\r\n/g, '\n') }, effects: eol.reconfigure(next.includes('\r\n') ? EditorState.lineSeparator.of('\r\n') : []), annotations: [externalChange.of(true)] });
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: Text.of(next.replace(/\r\n/g, '\n').split('\n')) }, effects: eol.reconfigure(next.includes('\r\n') ? EditorState.lineSeparator.of('\r\n') : []), annotations: [externalChange.of(true)] });
     dirty = false;
     return 'applied';
   }
@@ -50,9 +52,14 @@ export function createDocument({ parent, value, onChange, preferences, extension
       if (!['live', 'source', 'read'].includes(next)) throw Error('Unknown writing mode');
       if (view.composing || view.state.field(compositionState)) return false;
       restoreFocus ||= view.hasFocus;
-      view.dispatch({ effects: [modeEffect.of(next), mode.reconfigure([EditorState.readOnly.of(next === 'read'), EditorView.editable.of(next !== 'read')])] });
+      view.dispatch({ effects: [modeEffect.of(next), mode.reconfigure(modeExtensions(next === 'read'))] });
       if (restoreFocus && next !== 'read') { view.focus(); restoreFocus = false; }
       return true;
+    },
+    setReadonly(value) {
+      if (permissionReadOnly === !!value) return;
+      permissionReadOnly = !!value;
+      view.dispatch({ effects: mode.reconfigure(modeExtensions(view.state.field(modeState) === 'read')) });
     },
     setPreferences: next => view.dispatch({ effects: assistance.reconfigure(createAssistance(next)) }),
     setPreview: next => view.dispatch({ effects: preview.reconfigure(next) }),

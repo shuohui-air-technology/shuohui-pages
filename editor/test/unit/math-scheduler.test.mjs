@@ -58,3 +58,32 @@ test('default_cache_evicts_after_256_distinct_formulas', async () => {
   const node = f.node('$0$'); f.scheduler.setVisible([node]); f.scheduler.request(node, '0', 1); f.tick(500); await flush();
   assert.equal(f.calls.length, 258); assert.equal(f.calls.at(-1), '0'); f.scheduler.destroy();
 });
+test('math_output_is_sanitized_after_conversion_including_cached_copies', async () => {
+  const f = fixture({ convert: (_source, window) => {
+    const output = window.document.createElement('div');
+    output.innerHTML = '<mjx-container><a href="javascript:alert(1)" onclick="bad()">math</a><img src="x" onerror="bad()"><script>bad()</script><mjx-math><mjx-mi>x</mjx-mi></mjx-math></mjx-container>';
+    return output;
+  } });
+  for (const source of ['x', 'x']) {
+    const node = f.node('$x$'); f.scheduler.setVisible([node]); f.scheduler.request(node, source, 1); f.tick(500); await flush();
+    assert.equal(node.querySelector('[href^="javascript:"], [onclick], [onerror], script'), null);
+    assert.ok(node.querySelector('mjx-math'));
+  }
+  f.scheduler.destroy();
+});
+test('shared_runtime_stays_single_flight_when_old_document_is_destroyed', async () => {
+  const window = new JSDOM('<main></main>').window, resolvers = [];
+  let active = 0, maxActive = 0;
+  const runtime = { tex2chtmlPromise: source => { maxActive = Math.max(maxActive, ++active); return new Promise(done => resolvers.push(() => { active--; const output = window.document.createElement('b'); output.textContent = source; done(output); })); } };
+  const schedulers = [];
+  for (const source of ['old', 'new']) {
+    const node = window.document.createElement('span'); node.textContent = source; window.document.querySelector('main').append(node);
+    const scheduler = api.createMathScheduler({ ensureMathJax: async () => runtime, clock: { setTimeout: fn => { queueMicrotask(fn); return 1; }, clearTimeout() {} } });
+    schedulers.push(scheduler); scheduler.setVisible([node]); scheduler.request(node, source, 1); await flush();
+    if (source === 'old') scheduler.destroy();
+  }
+  assert.equal(maxActive, 1);
+  resolvers.shift()(); await flush(); assert.equal(resolvers.length, 1);
+  resolvers.shift()(); await flush(); assert.equal(maxActive, 1);
+  schedulers.forEach(scheduler => scheduler.destroy());
+});

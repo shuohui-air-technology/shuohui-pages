@@ -36,6 +36,15 @@ diff --git a/src/lib/services/contents/file/format.js b/src/lib/services/content
 diff --git a/src/lib/services/contents/draft/save/changes.js b/src/lib/services/contents/draft/save/changes.js
 --- a/src/lib/services/contents/draft/save/changes.js
 +++ b/src/lib/services/contents/draft/save/changes.js
+@@ -135,7 +135,7 @@ const replaceBlobURLs = async ({
+     keyPath,
+     content,
+     // Enable encoding for markdown fields to support embedded images
+-    encodingEnabled: RICH_TEXT_FIELD_TYPES.includes(field?.widget ?? '') || encodingEnabled,
++    encodingEnabled: field?.widget === 'source-markdown' || RICH_TEXT_FIELD_TYPES.includes(field?.widget ?? '') || encodingEnabled,
+   };
+ 
+   // Replace blob URLs in File/Image fields with asset paths
 @@ -191,7 +191,10 @@ const normalizeFieldValue = async ({ keyPath, value, ...args }) => {
    }
  

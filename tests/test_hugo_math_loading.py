@@ -66,6 +66,16 @@ class HugoMathLoadingTests(unittest.TestCase):
             source = self._html(relative_path)
             self.assertNotIn("mathjax@3.2.2", source)
 
+    def test_article_font_stylesheet_is_published_with_integrity(self):
+        source = self._acgn_article_containing('什么是 Agent')
+        self.assertIn('data-article-typography', source)
+        self.assertIn('/css/article-typography.min.', source)
+        self.assertTrue((self.public_dir / 'fonts/lxgw-wenkai-mono/OFL.txt').is_file())
+
+    def test_article_font_does_not_load_on_listing_or_home(self):
+        for relative_path in ('index.html', 'acgn/index.html', 'math/index.html'):
+            self.assertNotIn('data-article-typography', self._html(relative_path))
+
     def test_mixed_section_loads_mathjax_when_a_child_enables_math(self):
         with tempfile.TemporaryDirectory() as directory:
             fixture_root = Path(directory)

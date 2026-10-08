@@ -1,12 +1,37 @@
-.shuohui-writing { color: inherit; font: 17px/1.65 system-ui, sans-serif; max-width: 960px; margin: auto; }
-.shuohui-writing-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; position: sticky; top: 0; background: Canvas; z-index: 2; padding: .5rem 0; }
-.shuohui-writing button, .shuohui-writing select { font: inherit; color: inherit; padding: .25rem .6rem; border: 1px solid GrayText; border-radius: 5px; background: Canvas; }
-.shuohui-writing .cm-editor { min-height: 55vh; border: 1px solid #8884; }
-.shuohui-writing .cm-content { padding: 16px 24px; font-family: inherit; }
-.shuohui-writing .cm-focused { outline: 1px solid #7b91b4; }
-.shuohui-block { line-height: 1.65; overflow-wrap: anywhere; max-width: 100%; }
-.shuohui-block h1, .shuohui-block h2, .shuohui-block h3 { line-height: 1.3; margin: .75em 0 .35em; }
-.shuohui-block p { margin: .35em 0; }
+.shuohui-writing {
+  --writing-surface: var(--sui-primary-background-color, Canvas);
+  --writing-ink: var(--sui-primary-foreground-color, CanvasText);
+  --writing-muted: var(--sui-secondary-foreground-color, GrayText);
+  --writing-line: color-mix(in srgb, var(--writing-ink) 14%, transparent);
+  --writing-hover: color-mix(in srgb, var(--writing-ink) 6%, var(--writing-surface));
+  --writing-focus: #527cac;
+  color: var(--writing-ink);
+  font: 17px/1.8 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  max-width: 860px;
+  min-width: 0;
+  margin: auto;
+}
+.shuohui-writing-toolbar { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; position: sticky; top: 0; background: var(--writing-surface); z-index: 2; padding: .65rem 0; border-bottom: 1px solid var(--writing-line); font-size: 14px; line-height: 1.5; }
+.shuohui-writing button, .shuohui-writing select, .shuohui-writing-toolbar summary { box-sizing: border-box; font: inherit; color: inherit; padding: .4rem .7rem; min-height: 34px; border: 1px solid transparent; border-radius: 7px; background: transparent; cursor: pointer; }
+.shuohui-writing select { border-color: var(--writing-line); background: var(--writing-surface); }
+.shuohui-writing button:hover, .shuohui-writing-toolbar summary:hover { background: var(--writing-hover); }
+.shuohui-writing button[aria-pressed="true"] { background: var(--writing-hover); border-color: var(--writing-line); }
+.shuohui-writing :is(button, select, summary, textarea):focus-visible { outline: 2px solid var(--writing-focus); outline-offset: 2px; }
+.shuohui-writing button:disabled { cursor: default; opacity: .55; }
+.shuohui-writing .cm-editor { min-height: 55vh; border: 0; background: transparent; }
+.shuohui-writing .cm-content { padding: 22px 4px 100px; font-family: inherit; caret-color: var(--writing-focus); }
+.shuohui-writing .cm-scroller { font-family: inherit; }
+.shuohui-writing .cm-focused { outline: none; }
+/* A local keyboard-focus marker, not a decorative frame around the article. */
+.shuohui-writing .cm-content:focus-visible { outline: none; box-shadow: inset 2px 0 var(--writing-focus); }
+.shuohui-block { line-height: 1.8; overflow-wrap: anywhere; max-width: 100%; white-space: normal; }
+.shuohui-block h1, .shuohui-block h2, .shuohui-block h3 { line-height: 1.35; letter-spacing: -.015em; margin: 1.2em 0 .5em; }
+.shuohui-block h1 { font-size: 1.8em; }
+.shuohui-block h2 { font-size: 1.5em; }
+.shuohui-block h3 { font-size: 1.2em; }
+.shuohui-block p { margin: .6em 0; }
+.shuohui-block blockquote { margin-inline: 0; padding-inline-start: 1em; border-inline-start: 3px solid var(--writing-line, #8885); }
+.shuohui-block a { color: var(--sui-accent-foreground-color, #527cac); text-underline-offset: .2em; }
 .shuohui-block img { max-width: 100%; height: auto; }
 .shuohui-block pre { padding: .8rem; background: #8881; overflow: auto; white-space: pre; }
 .shuohui-block code { font-family: ui-monospace, monospace; }
@@ -14,13 +39,49 @@
 .shuohui-block td, .shuohui-block th { border: 1px solid #8885; padding: .3rem .65rem; }
 .shuohui-block summary { cursor: pointer; font-weight: 600; }
 .shuohui-math-block { display: block; overflow-x: auto; text-align: center; padding: .5rem 0; }
-.shuohui-writing-status { font-size: .85em; color: GrayText; }
-.shuohui-writing-outline { max-height: 40vh; overflow: auto; }
+.shuohui-writing-status { font-size: 12px; line-height: 1.6; color: var(--writing-muted); padding: .4rem 0; }
+.shuohui-writing-outline nav { max-height: 40vh; overflow: auto; min-width: 180px; }
 .shuohui-writing-outline button { display: block; border: none; }
 .shuohui-writing textarea { box-sizing: border-box; width: 100%; min-height: 55vh; font: 16px/1.6 ui-monospace, monospace; }
 [data-shuohui-hidden] { display: none !important; }
 .shuohui-writing [hidden] { display: none !important; }
 .shuohui-writing-toolbar > details { position: relative; }
-.shuohui-writing-toolbar > details[open] { background: Canvas; padding: .5rem; border: 1px solid #8884; }
-.shuohui-writing-toolbar label { display: block; white-space: nowrap; }
-@media (max-width: 600px) { .shuohui-writing .cm-content { padding: 12px; } .shuohui-writing { font-size: 16px; } }
+.shuohui-writing-toolbar > details[open] { background: var(--writing-surface); border-radius: 7px; }
+.shuohui-writing-toolbar > details[open] > :not(summary) { position: relative; display: block; background: var(--writing-surface); padding: .45rem .7rem; }
+.shuohui-writing-toolbar label { display: block; white-space: nowrap; font-size: 14px; }
+.shuohui-writing-toolbar input[type="checkbox"] { margin-inline-end: .5rem; accent-color: var(--writing-focus); }
+
+/* Semantic hooks added only after the native edit pane and save control pass
+   the layout guard. Never select Svelte's generated classes or hide alerts. */
+[data-shuohui-layout] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+[data-shuohui-layout] [role="toolbar"] { gap: .25rem; }
+[data-shuohui-writing-pane] [data-key-path="body"] > * { max-width: 860px; }
+[data-shuohui-layout="writing"] [data-shuohui-writing-pane] :is([data-key-path="date"], [data-key-path="draft"]) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem .9rem;
+  max-width: 892px;
+  margin-inline: auto;
+  padding-block: .45rem;
+}
+[data-shuohui-layout="writing"] [data-shuohui-writing-pane] :is([data-key-path="date"], [data-key-path="draft"]) > header { flex: 0 0 112px; margin: 0 !important; }
+[data-shuohui-layout="writing"] [data-shuohui-writing-pane] :is([data-key-path="date"], [data-key-path="draft"]) > header h4 { white-space: nowrap; }
+[data-shuohui-layout="writing"] [data-shuohui-writing-pane] [data-key-path="date"] > div { margin-inline: 0 !important; min-width: 0; flex-wrap: wrap; }
+[data-shuohui-layout="writing"] [data-key-path="date"] input { max-width: 100%; box-sizing: border-box; }
+[data-shuohui-layout] .sui.icon[data-shuohui-icon] { font-size: 0 !important; line-height: 0; width: 24px; height: 24px; text-indent: 0; flex: none; display: inline-flex; align-items: center; justify-content: center; }
+[data-shuohui-layout] .sui.icon[data-shuohui-icon]::before { content: ''; display: block; width: 20px; height: 20px; background: currentColor; mask-image: var(--shuohui-icon-mask); mask-size: contain; mask-repeat: no-repeat; mask-position: center; }
+[data-shuohui-layout] .sui.icon.small-arrow[data-shuohui-icon] { width: 16px; }
+[data-shuohui-layout] .sui.icon.small-arrow[data-shuohui-icon]::before { width: 14px; height: 14px; }
+:root[data-theme="dark"] .shuohui-writing { color-scheme: dark; --writing-focus: #94b5dc; }
+:root[data-theme="light"] .shuohui-writing { color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .shuohui-writing { color-scheme: dark; --writing-focus: #94b5dc; } }
+@media (max-width: 600px) {
+  .shuohui-writing { font-size: 16px; }
+  .shuohui-writing .cm-content { padding: 16px 2px 70px; }
+  .shuohui-writing-toolbar { gap: .2rem; padding-block: .5rem; }
+  .shuohui-writing button, .shuohui-writing select, .shuohui-writing-toolbar summary { padding-inline: .55rem; }
+  [data-shuohui-layout="writing"] [data-shuohui-writing-pane] :is([data-key-path="date"], [data-key-path="draft"]) { gap: .3rem .6rem; }
+  [data-shuohui-layout="writing"] [data-shuohui-writing-pane] :is([data-key-path="date"], [data-key-path="draft"]) > header { flex-basis: 88px; }
+}

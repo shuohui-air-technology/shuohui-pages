@@ -1,3 +1,37 @@
+import { sanitizeMathOutput } from './math-output.mjs';
+
+// All editor documents share one downloaded runtime, not one mutable TeX session.
+const runtimes = new WeakMap();
+async function convert(mathJax, owner, job, valid) {
+  let runtime = runtimes.get(mathJax);
+  if (!runtime) { runtime = { tail: Promise.resolve(), owner: null }; runtimes.set(mathJax, runtime); }
+  const result = runtime.tail.then(async () => {
+    if (!valid()) return null;
+    if (runtime.owner !== owner) {
+      // Documented MathJax 3 startup API rebuilds parser state, including macros;
+      // texReset alone only clears equation numbers and labels.
+      const startup = mathJax.startup;
+      if (startup?.getInputJax && startup?.getDocument) {
+        // Keep the shared CHTML font/style cache: rebuilding the output jax can
+        // leave already-inserted adaptive CSS incomplete for later glyphs.
+        startup.input = startup.getInputJax();
+        startup.document = startup.getDocument();
+        startup.makeMethods();
+      }
+      runtime.owner = owner;
+    }
+    const output = await mathJax.tex2chtmlPromise(job.source, { display: job.display });
+    // String conversion returns CHTML but does not insert its stylesheet.
+    // Use the pinned HTMLDocument API to mount/update trusted renderer CSS,
+    // including adaptive glyph rules and assistive-MathML clipping. Keep this
+    // in the shared queue; never permit author <style> through the sanitizer.
+    mathJax.startup?.document?.addStyleSheet?.();
+    return output;
+  });
+  runtime.tail = result.catch(() => {});
+  return result;
+}
+
 const defaultClock = {
   setTimeout: (fn, delay) => setTimeout(fn, delay), clearTimeout: id => clearTimeout(id),
   requestIdleCallback: typeof requestIdleCallback === 'function' ? fn => requestIdleCallback(fn, { timeout: 100 }) : null,
@@ -5,6 +39,7 @@ const defaultClock = {
 };
 
 export function createMathScheduler({ ensureMathJax, clock = defaultClock, maxCacheEntries = 256, configKey = 'shuohui-mathjax-3.2.2-v1' }) {
+  const owner = {};
   const pending = new Map(), cache = new Map(), rendered = new WeakMap();
   let visible = new Set(), version = 0, destroyed = false, running = false, timer = null, idle = null, debouncing = false;
   function clearTimer() { if (timer !== null) clock.clearTimeout(timer); timer = null; }
@@ -28,7 +63,9 @@ export function createMathScheduler({ ensureMathJax, clock = defaultClock, maxCa
       if (!output) {
         const mathJax = await ensureMathJax();
         if (destroyed || job.version !== version || !job.node.isConnected || !visible.has(job.node)) return;
-        output = await mathJax.tex2chtmlPromise(job.source, { display: job.display });
+        output = await convert(mathJax, owner, job, () => !destroyed && job.version === version && job.node.isConnected && visible.has(job.node));
+        if (!output) return;
+        output = sanitizeMathOutput(output);
         cache.set(job.key, output.cloneNode(true));
         while (cache.size > maxCacheEntries) cache.delete(cache.keys().next().value);
       } else { cache.delete(job.key); cache.set(job.key, output); }

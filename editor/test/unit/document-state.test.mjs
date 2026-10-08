@@ -49,6 +49,13 @@ test('external_value_before_edit_preserves_new_eol', () => {
   assert.equal(doc.getSource(), 'new\r\ntext\r\n');
   doc.destroy();
 });
+test('external_crlf_to_lf_keeps_real_line_structure_and_text', () => {
+  const doc = create('old\r\nline\r\n');
+  assert.equal(doc.syncValue('new\ntext\n'), 'applied');
+  assert.equal(doc.getSource(), 'new\ntext\n');
+  assert.equal(doc.view.state.doc.lines, 3);
+  doc.destroy();
+});
 test('preferences_persist_only_valid_booleans', () => {
   const data = new Map();
   const storage = { getItem: key => data.get(key), setItem: (key, value) => data.set(key, value) };
