@@ -2,7 +2,7 @@
 
 日期：2026-10-08（Asia/Shanghai）
 
-状态：设计草案，等待用户审阅；不表示实现、测试或上线完成。
+状态：整体设计已获用户确认；实施计划待审阅，不表示实现、测试或上线完成。
 
 核对基线：`b2f0f5a038a0911bc44332e10f7fb500bc9764cd`。设计时远端 `main` 与此提交一致。
 
@@ -80,6 +80,8 @@
 读取：仓库文章 → CMS 的原字段 → 文本状态。输入或显式辅助操作 → 文本事务 → CMS `body` 值。文本状态 → 显示装饰/阅读视图，只单向读取。保存 → CMS 原有提交链路，不经过预览反向序列化。
 
 采用 `CMS.registerFieldType` 注册独立正文类型，在调用 `CMS.init()` 前完成注册。使用手动初始化，锁定验证过的 Sveltia 版本。CodeMirror 及渲染依赖放在独立的编辑器构建目录，精确锁版本；生成的静态资源、许可声明和构建检查随仓库维护。实施时再选择并验证具体依赖版本，本设计不要求安装依赖。
+
+计划核对补充：Sveltia 0.232.0 的文件读取入口先 `trim()` 并统一 LF，定制格式写出结果也会被裁剪。因此，仅注册正文字段或定制格式仍不能满足第 5 节的原文保证。实施计划须包含局限于专用 Markdown 格式的读写修正，基于锁定的 MIT 许可 CMS 源码可重复构建本地资源；其他格式、登录及发布逻辑不变。编辑器临时保存原 front matter、分隔符和换行信息以保留未知字段，但这些编辑器内部信息不能写入文章。此项是落实原文保证的必要适配，不是扩展 CMS 功能范围。依据：[官方格式 API](https://sveltiacms.app/en/docs/api/file-formats)、[固定版本读取入口](https://github.com/sveltia/sveltia-cms/blob/v0.232.0/src/lib/services/contents/file/parse.js)、[固定版本写出入口](https://github.com/sveltia/sveltia-cms/blob/v0.232.0/src/lib/services/contents/file/format.js)。
 
 CMS 支持自定义字段、`value/onChange`、媒体接口及初始化顺序，依据：[字段 API](https://sveltiacms.app/en/docs/api/field-types)、[手动初始化](https://sveltiacms.app/en/docs/api/initialization)。
 
