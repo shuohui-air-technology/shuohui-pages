@@ -4,29 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shuohui CMS</title>
+    <link rel="stylesheet" href="/admin/editor/editor.css?v=88ddfa3d1eded8e1" />
+    <script>window.CMS_MANUAL_INIT = true;</script>
     <script src="/js/mathjax-config.js?v=lazy-1"></script>
+    <script>window.MathJax.startup = { typeset: false };</script>
   </head>
   <body>
-    <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
-    <script src="/admin/markdown-format.js?v=3fence-1"></script>
+    <script src="/admin/vendor/sveltia-cms.js"></script>
     <script src="/admin/mathjax-loader.js?v=lazy-1"></script>
-    <script src="/admin/mathjax-preview.js?v=lazy-1"></script>
-    <script>
-      (function () {
-        function startPreview() {
-          if (!window.ShuohuiMathJaxPreview || !window.ShuohuiMathJaxPreview.startBrowserController) {
-            return;
-          }
-
-          window.ShuohuiMathJaxPreview.startBrowserController(window);
-        }
-
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', startPreview, { once: true });
-        } else {
-          startPreview();
-        }
-      })();
-    </script>
+    <script src="/admin/editor/bootstrap.js?v=848241eb9db06849"></script>
   </body>
 </html>

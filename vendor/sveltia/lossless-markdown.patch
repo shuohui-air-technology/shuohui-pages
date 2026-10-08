@@ -33,3 +33,50 @@ diff --git a/src/lib/services/contents/file/format.js b/src/lib/services/content
    }
  
    if (format === 'raw') {
+diff --git a/src/lib/services/contents/draft/save/changes.js b/src/lib/services/contents/draft/save/changes.js
+--- a/src/lib/services/contents/draft/save/changes.js
++++ b/src/lib/services/contents/draft/save/changes.js
+@@ -191,7 +191,10 @@ const normalizeFieldValue = async ({ keyPath, value, ...args }) => {
+   }
+ 
+   // Remove leading & trailing whitespace
+-  content[keyPath] = value.trim();
++  const { collection, collectionFile, isIndexFile } = args.draft;
++  const { format } = resolveFileConfig({ collection, collectionFile, isIndexFile });
++  // This dedicated format preserves body and unknown metadata string values.
++  content[keyPath] = format === 'shuohui-markdown-lossless' ? value : value.trim();
+ 
+   const matches = [...value.matchAll(getBlobRegex('g'))];
+ 
+diff --git a/src/lib/services/backends/fs/shared/load.js b/src/lib/services/backends/fs/shared/load.js
+--- a/src/lib/services/backends/fs/shared/load.js
++++ b/src/lib/services/backends/fs/shared/load.js
+@@ -7,6 +7,10 @@
+ import { gitConfigFiles } from '$lib/services/backends/git/shared/config';
+ import { createFileList, describeFileList } from '$lib/services/backends/process';
+ import { allEntries, dataLoaded, entryParseErrors } from '$lib/services/contents';
++import { getCollection } from '$lib/services/contents/collection';
++import { isCollectionIndexFilePath } from '$lib/services/contents/collection/entries/index-file';
++import { getCollectionFile } from '$lib/services/contents/collection/files';
++import { resolveFileConfig } from '$lib/services/contents/file/config';
+ import { prepareEntries } from '$lib/services/contents/file/process';
+ import { getGitHash } from '$lib/services/utils/file';
+ import { createDebugLogger } from '$lib/services/utils/logging';
+@@ -72,7 +76,16 @@ export const parseTextFileInfo = async (fileInfo) => {
+       return fileInfo;
+     }
+ 
+-    const text = await readAsText(file);
++    const { type, path, folder } = fileInfo;
++    const collection = type === 'entry' && folder ? getCollection(folder.collectionName) : undefined;
++    const collectionFile = collection && folder.fileName
++      ? getCollectionFile(collection, folder.fileName) : undefined;
++    const isIndexFile = collection && !collectionFile && isCollectionIndexFilePath(collection, path);
++    const format = collection
++      ? resolveFileConfig({ collection, collectionFile, isIndexFile }).format : undefined;
++    // The utility normalizes CRLF before custom parsers can see it.
++    const text = format === 'shuohui-markdown-lossless'
++      ? await file.text() : await readAsText(file);
+ 
+     return { ...fileInfo, text };
+   } catch (ex) {

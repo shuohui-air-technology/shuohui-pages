@@ -1,4 +1,5 @@
 editor:
+  # Article collections below override this with the source-only focused editor.
   preview: true
 
 backend:

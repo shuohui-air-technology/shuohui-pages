@@ -246,6 +246,17 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn('name: "cover"', generated_config)
         self.assertIn('name: "body"', generated_config)
 
+    def test_new_article_collection_uses_lossless_editor_and_top_level_snapshot(self):
+        import yaml
+        config = yaml.safe_load(sync_sections_module.render_admin_config(
+            [{"name": "旅行", "slug": "travel", "weight": 1, "math": False}], "collections:\n## ARTICLE_COLLECTIONS ##\n"))
+        section = config["collections"][0]
+        self.assertEqual(section["format"], "shuohui-markdown-lossless")
+        fields = {field["name"]: field for field in section["fields"]}
+        self.assertEqual(fields["body"]["widget"], "source-markdown")
+        self.assertEqual(fields["_shuohui_source_snapshot"]["widget"], "hidden")
+        self.assertFalse(fields["_shuohui_source_snapshot"]["required"])
+
     def test_sync_sections_generates_indexes_and_admin_config_from_registry(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

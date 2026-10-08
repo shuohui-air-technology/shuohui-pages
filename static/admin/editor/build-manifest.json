@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "gzipBytes": 267360,
+  "files": {
+    "editor.js": "3d46a6b69101705d04cbcd9ea30c1da4e20cd10d406527879f26e81af88f4f6d",
+    "bootstrap.js": "848241eb9db068499d43fa69e21eeb527838e13841dc12b1373c16d84b793c4d",
+    "editor.css": "88ddfa3d1eded8e16961d822ad9130b091460f046b2ac3d8886b954389a7d5c3",
+    "LICENSES.txt": "fa580bd665f1513bc3eeb47730d64d91ced3589fd2ad5390ff37b55048e21468",
+    "compatibility-preview.json": "e7fb31abe2d96f08288f85661e3197868d0f01f7292a4185efcd0e4cff24bd8a"
+  },
+  "dependencies": {
+    "@marijn/find-cluster-break": "1.0.4",
+    "@codemirror/state": "6.7.6",
+    "style-mod": "4.1.4",
+    "w3c-keyname": "2.2.8",
+    "crelt": "1.0.7",
+    "@codemirror/view": "6.43.14",
+    "@lezer/common": "1.5.3",
+    "@lezer/highlight": "1.2.5",
+    "@codemirror/streamparser": "6.0.0",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/autocomplete": "6.20.3",
+    "@lezer/markdown": "1.8.0",
+    "@lezer/lr": "1.4.11",
+    "@lezer/html": "1.3.13",
+    "@lezer/css": "1.3.9",
+    "@codemirror/lang-css": "6.3.1",
+    "@lezer/javascript": "1.5.6",
+    "@codemirror/lang-javascript": "6.2.5",
+    "@codemirror/lang-html": "6.4.12",
+    "@codemirror/lang-markdown": "6.5.2",
+    "mdurl": "2.1.0",
+    "uc.micro": "3.0.0",
+    "entities": "8.1.0",
+    "linkify-it": "6.1.0",
+    "punycode.js": "2.3.1",
+    "markdown-it": "15.0.2",
+    "dompurify": "3.4.16",
+    "yaml": "2.9.1"
+  }
+}

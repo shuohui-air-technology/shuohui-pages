@@ -100,6 +100,7 @@ export function createMarkdownParser({ getAsset = value => value } = {}) {
   const image = md.renderer.rules.image;
   md.renderer.rules.image = (tokens, i, options, env, renderer) => {
     const token = tokens[i];
+    token.attrSet('data-source-path', token.attrGet('src'));
     token.attrSet('src', String(getAsset(token.attrGet('src'))));
     token.attrSet('loading', 'lazy');
     return image(tokens, i, options, env, renderer);

@@ -1,9 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 const require = createRequire(import.meta.url);
 const formatter = require('../static/admin/markdown-format.js');
+
+test('loading_legacy_formatter_does_not_register_silent_presave_mutations', () => {
+  const listeners = [];
+  runInNewContext(readFileSync('static/admin/markdown-format.js', 'utf8'), { window: { CMS: { registerEventListener: event => listeners.push(event) } } });
+  assert.deepEqual(listeners, []);
+});
 
 test('normalizeMarkdownBody formats common article boundaries', () => {
   const source = [

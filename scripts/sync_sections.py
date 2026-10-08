@@ -208,6 +208,8 @@ def _render_article_collection(section: dict[str, object]) -> str:
         f"    label: {title}\n"
         f'    folder: "content/{slug}"\n'
         "    create: true\n"
+        '    format: "shuohui-markdown-lossless"\n'
+        '    editor: {preview: false}\n'
         "    fields:\n"
         '      - {label: "文章标题", name: "title", widget: "string"}\n'
         '      - label: "文章 Slug（可选；不是板块 Slug）"\n'
@@ -235,7 +237,8 @@ def _render_article_collection(section: dict[str, object]) -> str:
         '          - {label: "上传图片", name: "image", widget: "image", required: false}\n'
         '          - {label: "图片替代文字(Alt)", name: "alt", widget: "string", required: false}\n'
         '          - {label: "使用相对路径", name: "relative", widget: "boolean", default: true, required: false}\n'
-        '      - {label: "正文内容", name: "body", widget: "markdown"}\n'
+        '      - {name: "_shuohui_source_snapshot", widget: "hidden", required: false}\n'
+        '      - {label: "正文内容", name: "body", widget: "source-markdown"}\n'
     )
 
 

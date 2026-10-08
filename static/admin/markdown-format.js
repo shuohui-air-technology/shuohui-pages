@@ -7,7 +7,6 @@
 
   if (root && typeof root === 'object') {
     root.ShuohuiMarkdownFormat = api;
-    if (root.CMS) api.registerPreSaveFormatter(root.CMS);
   }
 })(typeof window !== 'undefined' ? window : globalThis, function () {
   var MALFORMED_ORDERED_TITLE_RE = /^(\s*)(\d+)[.)、](\S.*)$/;
