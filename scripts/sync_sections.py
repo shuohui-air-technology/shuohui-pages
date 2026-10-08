@@ -4,6 +4,7 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 
@@ -108,11 +109,11 @@ def render_section_index(section: dict[str, object]) -> str:
     )
 
 
-def render_admin_config(sections: list[dict[str, object]], template: str) -> str:
+def render_admin_config(sections: list[dict[str, object]], template: str, base_url: str = 'https://shuohui.uk/') -> str:
     if ARTICLE_COLLECTIONS_MARKER not in template:
         raise ValueError("admin config template is missing the article-collection marker")
 
-    collections = "\n".join(_render_article_collection(section) for section in sections)
+    collections = "\n".join(_render_article_collection(section, base_url) for section in sections)
     return template.replace(ARTICLE_COLLECTIONS_MARKER, collections).rstrip("\n") + "\n"
 
 
@@ -133,7 +134,7 @@ def sync_sections(repo_root: Path) -> None:
 
     template_path = repo_root / "static" / "admin" / "config.template.yml"
     template = template_path.read_text(encoding="utf-8")
-    rendered_config = render_admin_config(sections, template)
+    rendered_config = render_admin_config(sections, template, _base_url(repo_root))
     (repo_root / "static" / "admin" / "config.yml").write_text(
         rendered_config,
         encoding="utf-8",
@@ -159,6 +160,7 @@ def check_generated_files(repo_root: Path) -> list[str]:
     expected_config = render_admin_config(
         sections,
         template_path.read_text(encoding="utf-8"),
+        _base_url(repo_root),
     )
     if config_path.read_text(encoding="utf-8") != expected_config:
         errors.append("static/admin/config.yml: generated content drift")
@@ -199,7 +201,12 @@ def _yaml_quote(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _render_article_collection(section: dict[str, object]) -> str:
+def _base_url(root: Path) -> str:
+    config = root / 'hugo.toml'
+    return tomllib.loads(config.read_text()).get('baseURL', 'https://shuohui.uk/') if config.exists() else 'https://shuohui.uk/'
+
+
+def _render_article_collection(section: dict[str, object], base_url: str) -> str:
     slug = _require_string(section, "slug")
     title = _yaml_quote(_require_string(section, "name"))
     math_default = _yaml_bool(_require_math(section))
@@ -212,14 +219,15 @@ def _render_article_collection(section: dict[str, object]) -> str:
         '    editor: {preview: false}\n'
         "    fields:\n"
         '      - {label: "文章标题", name: "title", widget: "string"}\n'
-        '      - label: "文章 Slug（可选；不是板块 Slug）"\n'
+        '      - label: "公开链接名称（可选）"\n'
         '        name: "slug"\n'
-        '        widget: "string"\n'
+        '        widget: "public-slug"\n'
+        f'        base_url: {_yaml_quote(base_url)}\n'
         '        required: false\n'
-        '        hint: "留空沿用文件名；只用小写英文、数字和短横线，例如 prompt-engineering"\n'
+        '        hint: "留空沿用文件名，不改文章文件；允许短横线和下划线，如 what_is_agent"\n'
         '        pattern:\n'
-        '          - "^[a-z0-9]+(?:-[a-z0-9]+)*$"\n'
-        '          - "留空或只使用小写英文、数字和短横线"\n'
+        '          - "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"\n'
+        '          - "留空或只使用小写英文、数字、短横线和下划线"\n'
         '      - {label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ss", date_format: "YYYY-MM-DD", time_format: "HH:mm:ss"}\n'
         f'      - {{label: "是否开启公式(LaTeX)", name: "math", widget: "boolean", default: {math_default}}}\n'
         '      - label: "是否为草稿"\n'

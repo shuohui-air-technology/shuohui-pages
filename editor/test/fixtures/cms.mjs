@@ -37,12 +37,16 @@ export async function openCMS(page, files, { missingEditor = false, compatibilit
   return errors;
 }
 export async function readSaved(page, path) {
-  return page.evaluate(async path => {
+  let text;
+  await expect.poll(async () => { text = await page.evaluate(async path => {
+    try {
     let directory = await (await navigator.storage.getDirectory()).getDirectoryHandle('sveltia-cms-test');
     const parts = path.split('/');
     for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part);
-    return (await (await directory.getFileHandle(parts.at(-1))).getFile()).text();
-  }, path);
+    return await (await (await directory.getFileHandle(parts.at(-1))).getFile()).text();
+    } catch (error) { if (['NotFoundError', 'NotReadableError'].includes(error.name)) return undefined; throw error; }
+  }, path); return text !== undefined; }).toBe(true);
+  return text;
 }
 export async function openEntry(page, title) {
   await page.getByText(title, { exact: true }).first().dblclick();

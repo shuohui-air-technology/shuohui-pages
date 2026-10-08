@@ -237,8 +237,8 @@ class SectionRegistryTests(unittest.TestCase):
         self.assertIn('folder: "content/math"', generated_config)
         self.assertIn('name: "title"', generated_config)
         self.assertIn('name: "slug"', generated_config)
-        self.assertIn("文章 Slug（可选；不是板块 Slug）", generated_config)
-        self.assertIn("prompt-engineering", generated_config)
+        self.assertIn("公开链接名称（可选）", generated_config)
+        self.assertIn("what_is_agent", generated_config)
         self.assertIn('name: "date"', generated_config)
         self.assertIn('name: "math"', generated_config)
         self.assertIn('name: "draft"', generated_config)
@@ -340,7 +340,7 @@ class SectionRegistryTests(unittest.TestCase):
             self.assertIn('folder: "content/travel"', generated_config)
             self.assertIn('name: "title"', generated_config)
             self.assertIn('name: "slug"', generated_config)
-            self.assertIn("文章 Slug（可选；不是板块 Slug）", generated_config)
+            self.assertIn("公开链接名称（可选）", generated_config)
             self.assertIn('name: "date"', generated_config)
             self.assertIn('name: "math"', generated_config)
             self.assertIn('name: "draft"', generated_config)
@@ -388,116 +388,24 @@ class SectionRegistryTests(unittest.TestCase):
             self.assertEqual(errors, ["static/admin/config.yml: generated content drift"])
 
     def test_ci_and_readme_sync_sections_before_validation_and_build(self):
-        repository_root = Path(__file__).resolve().parents[1]
-        workflow = (repository_root / ".github" / "workflows" / "hugo.yml").read_text(
-            encoding="utf-8"
-        )
-        readme = (repository_root / "README.md").read_text(encoding="utf-8")
-        command = "python3 scripts/sync_sections.py"
-        python_test_command = "python3 -m unittest discover -s tests -v"
-        node_test_command = (
-            "node --test tests/mathjax-config.test.mjs "
-            "tests/mathjax-loader.test.mjs tests/mathjax-preview.test.mjs "
-            "tests/markdown-format.test.mjs cloudflare-gateway/index.test.js"
-        )
-
-        self.assertIn(command, workflow)
-        self.assertIn("python3 scripts/sync_sections.py --check", workflow)
-        self.assertIn("--sections data/sections.json", workflow)
-        self.assertIn("--content content", workflow)
-        self.assertIn("--hugo-list /tmp/shuohui-hugo-list.csv", workflow)
-        self.assertIn(python_test_command, workflow)
-        self.assertIn(node_test_command, workflow)
-        for required_output in (
-            "--required admin/index.html",
-            "--required admin/config.yml",
-            "--required admin/markdown-format.js",
-            "--required admin/mathjax-preview.js",
-            "--required js/mathjax-config.js",
-        ):
-            self.assertIn(required_output, workflow)
-        workflow_sync = workflow.index(command)
-        workflow_normalize = workflow.index(
-            "python3 scripts/content_tools.py normalize content"
-        )
-        workflow_validate = workflow.index(
-            "python3 scripts/content_tools.py validate content"
-        )
-        self.assertLess(
-            workflow.index("python3 scripts/bootstrap_theme.py"),
-            workflow_sync,
-        )
-        self.assertLess(
-            workflow_sync,
-            workflow.index("python3 scripts/content_tools.py validate content"),
-        )
-        self.assertLess(
-            workflow.index(python_test_command), workflow.index("hugo --minify")
-        )
-        self.assertLess(
-            workflow.index(node_test_command), workflow.index("hugo --minify")
-        )
-        self.assertLess(
-            workflow_normalize,
-            workflow_validate,
-        )
-        self.assertLess(workflow_validate, workflow.index(python_test_command))
-        self.assertLess(workflow_validate, workflow.index(node_test_command))
-        self.assertLess(workflow_sync, workflow.index("hugo --minify"))
-
-        normal_block_start = readme.index("```bash")
-        normal_block_end = readme.index("```", normal_block_start + len("```bash"))
-        normal_block = readme[normal_block_start:normal_block_end]
-        release_heading = readme.index("For a release-grade smoke check")
-        release_block_start = readme.index("```bash", release_heading)
-        release_block_end = readme.index("```", release_block_start + len("```bash"))
-        release_block = readme[release_block_start:release_block_end]
-
-        normal_sync = normal_block.index(command)
-        for validation_command in (
-            "python3 scripts/content_tools.py normalize content",
-            "python3 scripts/content_tools.py validate content",
-        ):
-            self.assertLess(normal_sync, normal_block.index(validation_command))
-
-        for block in (normal_block, release_block):
-            self.assertIn(command, block)
-            self.assertLess(block.index(command), block.index("hugo --minify"))
-            block_normalize = block.index(
-                "python3 scripts/content_tools.py normalize content"
-            )
-            block_validate = block.index(
-                "python3 scripts/content_tools.py validate content"
-            )
-            self.assertLess(
-                block_normalize,
-                block_validate,
-            )
-            self.assertLess(block_validate, block.index(python_test_command))
-            self.assertLess(block_validate, block.index(node_test_command))
-            self.assertLess(
-                block.index(python_test_command), block.index("hugo --minify")
-            )
-            self.assertLess(
-                block.index(node_test_command), block.index("hugo --minify")
-            )
-
-        self.assertIn("data/sections.json", readme)
-        self.assertIn("--sections data/sections.json", release_block)
-        self.assertIn("--content content", release_block)
-        self.assertIn("--hugo-list /tmp/shuohui-hugo-list.csv", release_block)
-        self.assertLess(
-            workflow.index("hugo list all"),
-            workflow.index("python3 scripts/check_build.py"),
-        )
-        self.assertIn("single source of truth", readme)
-        self.assertIn("change `name` and `weight`", readme)
-        self.assertIn("keep existing `slug` values stable", readme)
-        self.assertIn("renaming or reordering a section", readme)
-        self.assertIn("invalid `slug`", readme)
-        self.assertIn("reserved", readme)
-        self.assertIn("`admin`", readme)
-        self.assertIn("before deployment", readme)
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/hugo.yml").read_text()
+        readme = (root / "README.md").read_text()
+        builder = (root / "scripts/build_editor_site.py").read_text()
+        for document in (workflow, readme):
+            self.assertNotIn("normalize content", document)
+            self.assertIn("python3 scripts/sync_sections.py --check", document)
+            self.assertLess(document.index("scripts/sync_sections.py"), document.index("content_tools.py validate"))
+            self.assertLess(document.index("content_tools.py validate"), document.index("build_editor_site.py"))
+            self.assertIn("editor/test/unit/*.test.mjs", document)
+        for check in ("check_build(", "check_content_outputs(", "check_editor_build("):
+            self.assertIn(check, builder)
+        self.assertIn("content_dir=site / 'content'", builder)
+        self.assertIn("rows = inventory(site, site / 'content')", builder)
+        for required in ("admin/index.html", "admin/config.yml", "sitemap.xml"):
+            self.assertIn(required, builder)
+        for rule in ("data/sections.json", "name", "weight", "slug", "admin", "draft: true"):
+            self.assertIn(rule, readme)
 
     def test_image_optimizer_is_scoped_and_pinned(self):
         repository_root = Path(__file__).resolve().parents[1]

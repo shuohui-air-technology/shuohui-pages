@@ -6,6 +6,7 @@ async function start() {
   try {
     const editor = await import(new URL(`editor.js?v=${__EDITOR_VERSION__}`, scriptURL).href);
     editor.registerEditor(CMS);
+    editor.registerPublicRoute(CMS);
   } catch {
     const React = CMS.React;
     function SourceFallback(props) {
@@ -15,6 +16,7 @@ async function start() {
         React.createElement('textarea', { id: props.forID, value: original, 'aria-label': '正文源码', spellCheck: false, autoCorrect: 'off', autoCapitalize: 'off', onChange: event => props.onChange(event.target.value.replace(/\r\n/g, '\n').replace(/\n/g, newline)) }));
     }
     CMS.registerFieldType('source-markdown', SourceFallback);
+    CMS.registerFieldType('public-slug', CMS.getFieldType('string').control);
   }
   CMS.init();
 }

@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "gzipBytes": 267360,
+  "gzipBytes": 268557,
   "files": {
-    "editor.js": "3d46a6b69101705d04cbcd9ea30c1da4e20cd10d406527879f26e81af88f4f6d",
-    "bootstrap.js": "848241eb9db068499d43fa69e21eeb527838e13841dc12b1373c16d84b793c4d",
+    "editor.js": "a8543edccb3a12547caa193c22c576509a97fbd67c601d2d2d161494421a03f1",
+    "bootstrap.js": "83735dea1a95937f507ce21f924e52c0170a9ecdf2d921210713b2064e228a9e",
     "editor.css": "88ddfa3d1eded8e16961d822ad9130b091460f046b2ac3d8886b954389a7d5c3",
     "LICENSES.txt": "fa580bd665f1513bc3eeb47730d64d91ced3589fd2ad5390ff37b55048e21468",
     "compatibility-preview.json": "e7fb31abe2d96f08288f85661e3197868d0f01f7292a4185efcd0e4cff24bd8a"

@@ -31,7 +31,7 @@ def route_key(path: str) -> str:
     result = '/' + decoded.lstrip('/')
     if result.endswith('/index.html'):
         result = result[:-10]
-    return result.lower()
+    return result
 
 
 def inventory(root: Path, content: Path, config: Path | None = None) -> list[dict]:
@@ -122,13 +122,13 @@ def collect_routes(root: Path, baseline_revision: str) -> list[dict]:
 
 
 def validate_routes(records: list[dict], reserved_paths: set[str]) -> list[str]:
-    owners = {route_key(path): 'reserved system/section page' for path in reserved_paths}
+    owners = {route_key(path).casefold(): 'reserved system/section page' for path in reserved_paths}
     errors = []
     for record in records:
         if record['draft']:
             continue
         for path in [record['canonical'], *record['aliases']]:
-            key = route_key(path)
+            key = route_key(path).casefold()
             if key.startswith('/admin/') and key != '/admin/':
                 errors.append(f'reserved admin route {key}: {record["sourcePath"]}')
                 continue

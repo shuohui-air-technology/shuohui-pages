@@ -154,6 +154,11 @@ class _SourceAttributeParser(HTMLParser):
         self.sources: list[str] = []
 
     def _inspect(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        if tag.lower() == 'link' and attributes.get('rel') == 'stylesheet':
+            if attributes.get('href'):
+                self.sources.append(attributes['href'])
+            return
         if tag.lower() not in self.RESOURCE_TAGS:
             return
         source = dict(attrs).get("src")

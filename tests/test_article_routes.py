@@ -43,6 +43,10 @@ class ArticleRoutesTests(unittest.TestCase):
         for sample in samples:
             self.assertEqual(_validate_article_slug(sample['value']), sample['valid'], sample['value'])
 
+    def test_explicit_url_case_matches_actual_hugo_output(self):
+        self.write('', 'url: /Custom/Path/\n')
+        self.assertEqual(self.collect()[0]['canonical'], '/Custom/Path/')
+
     def test_slug_conflicts_with_filename_fallback(self):
         self.assertIsNotNone(routes)
         self.write('fallback')
