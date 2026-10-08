@@ -1,0 +1,25 @@
+{
+  "name": "shuohui-writing-editor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test:unit": "node --test test/unit/*.test.mjs",
+    "test:browser": "playwright test",
+    "check:bundle": "node build.mjs --check"
+  },
+  "dependencies": {
+    "esbuild": "0.28.2",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "node": "24.21.0",
+    "pnpm": "12.10.1",
+    "smol-toml": "1.9.0"
+  },
+  "allowScripts": {
+    "node@24.21.0": true,
+    "esbuild@0.28.2": true,
+    "pnpm@12.10.1": true
+  }
+}

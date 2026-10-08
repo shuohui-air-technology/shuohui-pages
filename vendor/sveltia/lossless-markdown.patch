@@ -1,0 +1,35 @@
+diff --git a/src/lib/services/contents/file/parse.js b/src/lib/services/contents/file/parse.js
+--- a/src/lib/services/contents/file/parse.js
++++ b/src/lib/services/contents/file/parse.js
+@@ -187,13 +187,15 @@ export const parseEntryFile = async ({ text = '', path, folder: { collectionName, fi
+     throw new Error('Collection file not found');
+   }
+ 
+-  // Normalize line breaks
+-  text = text.trim().replace(/\r\n?/g, '\n');
+-
+   // The collection’s special index file can have a format of its own
+   const isIndexFile = !collectionFile && isCollectionIndexFilePath(collection, path);
+   let { format } = resolveFileConfig({ collection, collectionFile, isIndexFile });
+   const customParser = customFileFormatRegistry.get(format)?.parser;
+ 
++  // Only Shuohui's dedicated Markdown format receives exact source bytes.
++  if (format !== 'shuohui-markdown-lossless') {
++    text = text.trim().replace(/\r\n?/g, '\n');
++  }
++
+   if (customParser) {
+     return customParser(text);
+   }
+diff --git a/src/lib/services/contents/file/format.js b/src/lib/services/contents/file/format.js
+--- a/src/lib/services/contents/file/format.js
++++ b/src/lib/services/contents/file/format.js
+@@ -199,7 +199,7 @@ export const formatEntryFile = async ({ content, _file, comments }) => {
+       );
+     }
+ 
+-    return `${output.trim()}\n`;
++    return format === 'shuohui-markdown-lossless' ? output : `${output.trim()}\n`;
+   }
+ 
+   if (format === 'raw') {

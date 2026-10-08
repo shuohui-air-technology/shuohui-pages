@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/sveltia/sveltia-cms.git",
+  "tag": "v0.232.0",
+  "commit": "a0061b36e75c215582d5ccf0668ce9621ad12b8c",
+  "files": {
+    "src/lib/services/contents/file/parse.js": "142ec87c4863a065f0f404a2860dfb25e8727385478cf815d481a1347fc6cd03",
+    "src/lib/services/contents/file/format.js": "029c17e414b9674ecef6ed17048e8af33d041d130a2589e95e929df6da2a3e59",
+    "pnpm-lock.yaml": "052d13cffb61b0cf196d7cf74f6f5287b1cf4abb6396367e29d69b68169cec58"
+  }
+}

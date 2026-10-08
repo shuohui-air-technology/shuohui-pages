@@ -7,3 +7,7 @@ themes/
 cloudflare-gateway/.wrangler/
 .worktrees/
 .superpowers/
+.editor-validation/
+editor/node_modules/
+editor/test-results/
+editor/playwright-report/

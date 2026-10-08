@@ -1,0 +1,3 @@
+# Preserve generated JavaScript string literals and unified-diff context lines.
+static/admin/vendor/** -whitespace
+vendor/sveltia/*.patch -whitespace
