@@ -12,6 +12,21 @@ if spec and spec.loader and Path(spec.origin).exists():
 
 
 class CmsBuildTests(unittest.TestCase):
+    def test_reused_dependencies_resolve_inside_the_staged_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / 'original/node_modules'
+            package = source / '.pnpm/example/node_modules/example'
+            package.mkdir(parents=True)
+            (package / 'Component.svelte').write_text('<p>example</p>')
+            (source / 'example').symlink_to('.pnpm/example/node_modules/example')
+            dest = root / 'staged/node_modules'
+            module.copy_dependencies(source, dest)
+            self.assertFalse(dest.is_symlink())
+            self.assertTrue((dest / 'example').is_symlink())
+            self.assertTrue((dest / 'example/Component.svelte').resolve().is_relative_to(dest.resolve()))
+            self.assertEqual((dest / 'example/Component.svelte').read_text(), '<p>example</p>')
+
     def test_modified_upstream_source_is_rejected_before_patch(self):
         self.assertIsNotNone(module, 'build CMS boundary is not implemented')
         with tempfile.TemporaryDirectory() as tmp:

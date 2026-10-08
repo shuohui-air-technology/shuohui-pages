@@ -28,6 +28,15 @@ def run(args, cwd, env=None):
     subprocess.run(args, cwd=cwd, env=env, check=True)
 
 
+def copy_dependencies(source: Path, destination: Path) -> None:
+    # Svelte hashes component filenames relative to the build root. Linking
+    # this whole directory to another checkout changes dependency CSS scope
+    # hashes compared with a clean CI install. Preserve pnpm's internal
+    # relative links, but keep their targets inside this staged checkout.
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, destination, symlinks=True)
+
+
 def build(output: Path, source: Path | None = None, check: bool = False) -> None:
     manifest = json.loads((ROOT / 'vendor/sveltia/manifest.json').read_text())
     with tempfile.TemporaryDirectory(prefix='shuohui-cms-') as tmp:
@@ -41,7 +50,7 @@ def build(output: Path, source: Path | None = None, check: bool = False) -> None
             verify_sources(source, manifest)
             shutil.copytree(source, checkout, ignore=shutil.ignore_patterns('node_modules', 'package', '.git'))
             if (source / 'node_modules').is_dir():
-                os.symlink(source / 'node_modules', checkout / 'node_modules', target_is_directory=True)
+                copy_dependencies(source / 'node_modules', checkout / 'node_modules')
         else:
             run(['git', 'clone', '--depth', '1', '--branch', manifest['tag'], manifest['repository'], str(checkout)], ROOT)
             actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=checkout, text=True).strip()
