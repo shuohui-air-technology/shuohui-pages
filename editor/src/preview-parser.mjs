@@ -86,7 +86,7 @@ function collapseBlock(state, line, endLine, silent) {
 }
 
 export function createMarkdownParser({ getAsset = value => value } = {}) {
-  const md = new MarkdownIt({ html: false, breaks: true, linkify: false, typographer: false });
+  const md = new MarkdownIt({ html: false, breaks: false, linkify: false, typographer: false });
   md.inline.ruler.before('escape', 'protected_math', mathInline);
   md.block.ruler.before('fence', 'math_block', mathBlock, { alt: ['paragraph', 'reference', 'blockquote', 'list'] });
   md.block.ruler.before('fence', 'collapse', collapseBlock, { alt: ['paragraph', 'reference', 'blockquote', 'list'] });

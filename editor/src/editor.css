@@ -1,0 +1,21 @@
+.shuohui-writing { color: inherit; font: 17px/1.65 system-ui, sans-serif; max-width: 960px; margin: auto; }
+.shuohui-writing-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; position: sticky; top: 0; background: Canvas; z-index: 2; padding: .5rem 0; }
+.shuohui-writing button, .shuohui-writing select { font: inherit; color: inherit; padding: .25rem .6rem; border: 1px solid GrayText; border-radius: 5px; background: Canvas; }
+.shuohui-writing .cm-editor { min-height: 55vh; border: 1px solid #8884; }
+.shuohui-writing .cm-content { padding: 16px 24px; font-family: inherit; }
+.shuohui-writing .cm-focused { outline: 1px solid #7b91b4; }
+.shuohui-block { line-height: 1.65; overflow-wrap: anywhere; max-width: 100%; }
+.shuohui-block h1, .shuohui-block h2, .shuohui-block h3 { line-height: 1.3; margin: .75em 0 .35em; }
+.shuohui-block p { margin: .35em 0; }
+.shuohui-block img { max-width: 100%; height: auto; }
+.shuohui-block pre { padding: .8rem; background: #8881; overflow: auto; white-space: pre; }
+.shuohui-block code { font-family: ui-monospace, monospace; }
+.shuohui-block table { display: block; overflow: auto; border-collapse: collapse; }
+.shuohui-block td, .shuohui-block th { border: 1px solid #8885; padding: .3rem .65rem; }
+.shuohui-block summary { cursor: pointer; font-weight: 600; }
+.shuohui-math-block { display: block; overflow-x: auto; text-align: center; padding: .5rem 0; }
+.shuohui-writing-status { font-size: .85em; color: GrayText; }
+.shuohui-writing-outline { max-height: 40vh; overflow: auto; }
+.shuohui-writing-outline button { display: block; border: none; }
+.shuohui-writing textarea { box-sizing: border-box; width: 100%; min-height: 55vh; font: 16px/1.6 ui-monospace, monospace; }
+@media (max-width: 600px) { .shuohui-writing .cm-content { padding: 12px; } .shuohui-writing { font-size: 16px; } }

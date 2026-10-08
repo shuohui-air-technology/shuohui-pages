@@ -64,3 +64,6 @@ test('real_articles_keep_tables_fences_and_math_in_reading_preview', () => {
     else assert.ok(render(source).includes('<table'));
   }
 });
+test('soft_line_break_matches_goldmark_instead_of_forcing_br', () => {
+  assert.equal(render('line 1\nline 2'), '<p>line 1\nline 2</p>\n');
+});
