@@ -1,0 +1,11 @@
+[
+  {"value": "", "valid": true},
+  {"value": "what_is_agent", "valid": true},
+  {"value": "what-is-agent", "valid": true},
+  {"value": "a_b-c2", "valid": true},
+  {"value": "a__b", "valid": false},
+  {"value": "a-", "valid": false},
+  {"value": "../secret", "valid": false},
+  {"value": "https://shuohui.uk/", "valid": false},
+  {"value": "Capital", "valid": false}
+]

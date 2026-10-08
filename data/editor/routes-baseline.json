@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "revision": "b2f0f5a038a0911bc44332e10f7fb500bc9764cd",
+  "entries": [
+    {
+      "id": "335b2ba7dbca3ee3d7fdd2bbd99ba834b68b4683c312d560f6680889721599a5",
+      "canonical": "/acgn/what-is-agent/",
+      "aliases": []
+    },
+    {
+      "id": "4f19e359c2a10d56913c4cd8155247053968d8584b1aa077f0dbd133fe0fcf56",
+      "canonical": "/math/latex-格式速记/",
+      "aliases": []
+    },
+    {
+      "id": "d647036a2857682981dc79e419403f9c941302eedcf5ce14c23472700d295663",
+      "canonical": "/acgn/what_is_prompt_engineering/",
+      "aliases": []
+    },
+    {
+      "id": "64655d6eb44916384974725aac5d4d1ac329f05333c6f2bea2d924f1dda238d1",
+      "canonical": "/math/和差化积/",
+      "aliases": []
+    },
+    {
+      "id": "66d619826b25082020e01e44eb0069314745a6d28b0c29a506cd93c8e995bb15",
+      "canonical": "/math/格拉姆-施密特正交化/",
+      "aliases": []
+    },
+    {
+      "id": "c82d8dc2dbd104673da5052295e779b804092bda4b86b1ff8c43f7c04a617f43",
+      "canonical": "/math/点火公式-华里士公式/",
+      "aliases": []
+    },
+    {
+      "id": "ba534dd61ac5bf17b639e6f23878fa2e67c2e4f3e8bf82b2fd16877f47e4a236",
+      "canonical": "/math/定积分的应用知识点总结/",
+      "aliases": []
+    },
+    {
+      "id": "4736ed99641459439c454b0d1603ed2a9c176b92826eba3e1e3a19147d8d40c9",
+      "canonical": "/math/傅里叶级数的相关笔记长期/",
+      "aliases": []
+    },
+    {
+      "id": "d17a030e840460d604a9ef016b20c13334329e9728cf99216dca377a635265f7",
+      "canonical": "/math/三角与反三角的导数对照表/",
+      "aliases": []
+    },
+    {
+      "id": "35961626e039a101f08831db3cbd29a105571aedd8e5130d39bc4beaced95ad0",
+      "canonical": "/math/瑕积分的判别/",
+      "aliases": []
+    },
+    {
+      "id": "1ed9f8a3a2c36eddec583976dd21d70d4506216bbb5d64636d2b07456762c2a9",
+      "canonical": "/math/内积空间的定义与性质及施密特正交化的步骤/",
+      "aliases": []
+    },
+    {
+      "id": "d9c8a25ebc52cacdd9bd920262ea8a9ba3782af7aa93230a74bdb8daada92093",
+      "canonical": "/math/2026-06-07-不定积分对照表-麦克劳林展开/",
+      "aliases": []
+    },
+    {
+      "id": "6969cd549482d00ba27fb8b2f2d6ad5b4478f0554f16c6576e61966a75b9599b",
+      "canonical": "/math/2026-06-07-算子可对角化的充要与充分条件/",
+      "aliases": []
+    },
+    {
+      "id": "38cefbf820cffd40d6cb74b8c2c5965bcbeb6c926761d3904613b97fc46e787f",
+      "canonical": "/math/2026-06-07-两个ladr中涉及-range及-null-的证明时常用的公式/",
+      "aliases": []
+    }
+  ]
+}

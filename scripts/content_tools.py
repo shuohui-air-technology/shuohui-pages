@@ -27,7 +27,7 @@ UNSAFE_STANDALONE_MATH_SYMBOLS = {"<", ">", "=", "-"}
 FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
 ESCAPED_TILDE_FENCE_RE = re.compile(r"^([ \t]{0,3})((?:\\~){3,})(.*)$")
 LITERAL_HASH_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+#+\s*$")
-ARTICLE_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+ARTICLE_SLUG_RE = re.compile(r"^[a-z0-9]+(?:[-_][a-z0-9]+)*$")
 
 
 def normalize_date_text(text: str) -> str:
@@ -595,7 +595,7 @@ def validate_files(content_dir: Path) -> list[str]:
 
 
 def validate_article_slug_conflicts(content_dir: Path) -> list[str]:
-    """Reject duplicate explicit article slugs within one section."""
+    """Preflight explicit and filename-fallback segments; Hugo remains authoritative."""
     seen: dict[tuple[str, str], Path] = {}
     errors: list[str] = []
     for path in iter_markdown_files(content_dir):
@@ -604,7 +604,7 @@ def validate_article_slug_conflicts(content_dir: Path) -> list[str]:
         front_matter = parse_front_matter(path.read_text(encoding="utf-8"))
         value = front_matter.get("slug")
         if not isinstance(value, str) or not value:
-            continue
+            value = path.stem.lower()
         section = path.parent.relative_to(content_dir).as_posix()
         key = (section, value)
         previous = seen.get(key)

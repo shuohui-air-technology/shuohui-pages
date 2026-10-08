@@ -28,6 +28,23 @@ def write_hugo_list(path: Path, rows: list[dict[str, str]]) -> None:
 
 
 class ContentOutputTests(unittest.TestCase):
+    def test_route_records_require_alias_output_pointing_to_canonical(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / 'public'
+            (public / 'acgn/new').mkdir(parents=True)
+            (public / 'acgn/new/index.html').write_text('published')
+            inventory = root / 'inventory.csv'
+            write_hugo_list(inventory, [{'path': 'content/acgn/one.md', 'kind': 'page', 'section': 'acgn', 'draft': 'false', 'permalink': 'https://shuohui.uk/acgn/new/'}])
+            records = [{'sourcePath': 'content/acgn/one.md', 'draft': False, 'canonical': '/acgn/new/', 'aliases': ['/acgn/old/']}]
+            errors = check_content_outputs(public, inventory, records)
+            self.assertTrue(any('missing alias' in error for error in errors))
+            (public / 'acgn/old').mkdir()
+            (public / 'acgn/old/index.html').write_text('<meta http-equiv="refresh" content="0; url=https://shuohui.uk/acgn/wrong/">')
+            self.assertTrue(any('alias target' in error for error in check_content_outputs(public, inventory, records)))
+            (public / 'acgn/old/index.html').write_text('<link rel="canonical" href="https://shuohui.uk/acgn/new/"><meta http-equiv="refresh" content="0; url=https://shuohui.uk/acgn/new/">')
+            self.assertEqual(check_content_outputs(public, inventory, records), [])
+
     def test_published_pages_are_required_and_drafts_are_forbidden(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -17,6 +17,15 @@ from scripts.content_tools import (
 
 
 class ContentToolsTests(unittest.TestCase):
+    def test_validate_files_rejects_explicit_slug_over_filename_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            content = Path(directory) / 'content'
+            content.mkdir()
+            common = 'date: 2026-01-01T00:00:00\ndraft: false\nmath: false\ncomments: false\n'
+            (content / 'one.md').write_text('---\ntitle: one\nslug: fallback\n' + common + '---\nbody\n')
+            (content / 'fallback.md').write_text('---\ntitle: other\n' + common + '---\nbody\n')
+            self.assertTrue(any('slug' in error and 'duplicate' in error for error in validate_files(content)))
+
     def test_normalize_markdown_structure_formats_common_article_boundaries(self):
         source = (
             "---\ntitle: Example\ndate: 2026-08-14T10:00:00\nmath: false\n---\n\n"
